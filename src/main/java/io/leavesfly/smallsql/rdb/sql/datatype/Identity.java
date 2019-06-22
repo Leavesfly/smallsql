@@ -40,7 +40,7 @@ import java.sql.SQLException;
 
 import io.leavesfly.smallsql.jdbc.SsConnection;
 import io.leavesfly.smallsql.rdb.engine.store.StorePage;
-import io.leavesfly.smallsql.rdb.sql.Expression;
+import io.leavesfly.smallsql.rdb.sql.expression.Expression;
 
 
 /**

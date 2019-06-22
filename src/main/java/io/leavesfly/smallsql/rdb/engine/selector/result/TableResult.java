@@ -44,7 +44,7 @@ import io.leavesfly.smallsql.rdb.engine.store.StoreNull;
 import io.leavesfly.smallsql.rdb.engine.store.StorePageLink;
 import io.leavesfly.smallsql.rdb.engine.table.Column;
 import io.leavesfly.smallsql.rdb.engine.table.Columns;
-import io.leavesfly.smallsql.rdb.sql.Expression;
+import io.leavesfly.smallsql.rdb.sql.expression.Expression;
 import io.leavesfly.smallsql.rdb.sql.datatype.MutableNumeric;
 
 public final class TableResult extends TableViewResult {

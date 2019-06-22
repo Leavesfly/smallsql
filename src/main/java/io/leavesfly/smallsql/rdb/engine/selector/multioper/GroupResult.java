@@ -39,7 +39,7 @@ import io.leavesfly.smallsql.rdb.command.dql.CommandSelect;
 import io.leavesfly.smallsql.rdb.engine.RowSource;
 import io.leavesfly.smallsql.rdb.engine.selector.result.MemoryResult;
 import io.leavesfly.smallsql.rdb.engine.table.Column;
-import io.leavesfly.smallsql.rdb.sql.Expression;
+import io.leavesfly.smallsql.rdb.sql.expression.Expression;
 import io.leavesfly.smallsql.rdb.sql.expression.ColumnExpression;
 import io.leavesfly.smallsql.rdb.sql.expression.ExpressionName;
 import io.leavesfly.smallsql.lang.Language;

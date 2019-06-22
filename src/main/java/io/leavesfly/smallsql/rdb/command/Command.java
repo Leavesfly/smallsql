@@ -38,7 +38,7 @@ import io.leavesfly.smallsql.jdbc.SsConnection;
 import io.leavesfly.smallsql.jdbc.SsResultSet;
 import io.leavesfly.smallsql.jdbc.statement.SsStatement;
 import io.leavesfly.smallsql.logger.Logger;
-import io.leavesfly.smallsql.rdb.sql.Expression;
+import io.leavesfly.smallsql.rdb.sql.expression.Expression;
 import io.leavesfly.smallsql.rdb.sql.SQLParser;
 import io.leavesfly.smallsql.jdbc.SmallSQLException;
 import io.leavesfly.smallsql.lang.Language;

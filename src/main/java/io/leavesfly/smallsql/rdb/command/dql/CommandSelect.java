@@ -44,7 +44,7 @@ import io.leavesfly.smallsql.rdb.engine.selector.multioper.Join;
 import io.leavesfly.smallsql.rdb.engine.selector.multioper.Where;
 import io.leavesfly.smallsql.rdb.engine.selector.result.NoFromResult;
 import io.leavesfly.smallsql.rdb.engine.table.Columns;
-import io.leavesfly.smallsql.rdb.sql.Expression;
+import io.leavesfly.smallsql.rdb.sql.expression.Expression;
 import io.leavesfly.smallsql.rdb.sql.expression.ExpressionName;
 import io.leavesfly.smallsql.jdbc.SmallSQLException;
 import io.leavesfly.smallsql.jdbc.SsConnection;
@@ -61,527 +61,528 @@ import io.leavesfly.smallsql.rdb.sql.expression.Expressions;
 
 public class CommandSelect extends Command {
 
-	private DataSources tables; // List of TableResult (Tables and Views)
-	private Expression where;
-	public RowSource from;
-	private Expressions groupBy;
-	private Expression having;
-	private Expressions orderBy;
-	private boolean isAggregateFunction;
-	private int maxRows = -1;
-	/** is set if the keyword DISTINCT is used */
-	private boolean isDistinct;
+    private DataSources tables; // List of TableResult (Tables and Views)
+    private Expression where;
+    public RowSource from;
+    private Expressions groupBy;
+    private Expression having;
+    private Expressions orderBy;
+    private boolean isAggregateFunction;
+    private int maxRows = -1;
+    /**
+     * is set if the keyword DISTINCT is used
+     */
+    private boolean isDistinct;
 
-	public CommandSelect(Logger log) {
-		super(log);
-	}
+    public CommandSelect(Logger log) {
+        super(log);
+    }
 
-	public CommandSelect(Logger log, Expressions columnExpressions) {
-		super(log, columnExpressions);
-	}
+    public CommandSelect(Logger log, Expressions columnExpressions) {
+        super(log, columnExpressions);
+    }
 
-	public boolean compile(SsConnection con) throws Exception {
-		boolean needCompile = false;
-		if (tables != null) {
-			for (int i = 0; i < tables.size(); i++) {
-				DataSource fromEntry = tables.get(i);
-				needCompile |= fromEntry.init(con);
-			}
-		}
+    public boolean compile(SsConnection con) throws Exception {
+        boolean needCompile = false;
+        if (tables != null) {
+            for (int i = 0; i < tables.size(); i++) {
+                DataSource fromEntry = tables.get(i);
+                needCompile |= fromEntry.init(con);
+            }
+        }
 
-		if (from == null) {
-			from = new NoFromResult();
-			tables = new DataSources();
-			needCompile = true;
-		}
-		if (!needCompile)
-			return false;
+        if (from == null) {
+            from = new NoFromResult();
+            tables = new DataSources();
+            needCompile = true;
+        }
+        if (!needCompile)
+            return false;
 
-		for (int i = 0; i < columnExpressions.size(); i++) {
-			Expression col = columnExpressions.get(i);
-			if (col.getAlias() == null) {
-				// generate automate names for expressions
-				col.setAlias("col" + (i + 1));
-			}
+        for (int i = 0; i < columnExpressions.size(); i++) {
+            Expression col = columnExpressions.get(i);
+            if (col.getAlias() == null) {
+                // generate automate names for expressions
+                col.setAlias("col" + (i + 1));
+            }
 
-			if (col.getType() != Expression.NAME) {
-				compileLinkExpressionParams(col);
-				continue;
-			}
+            if (col.getType() != Expression.NAME) {
+                compileLinkExpressionParams(col);
+                continue;
+            }
 
-			ExpressionName expr = (ExpressionName) col;
+            ExpressionName expr = (ExpressionName) col;
 
-			if ("*".equals(expr.getName())) {
-				String tableAlias = expr.getTableAlias();
-				if (tableAlias != null) {
-					// Syntax: tableAlias.*
-					int t = 0;
-					for (; t < tables.size(); t++) {
-						DataSource fromEntry = tables.get(t);
-						if (tableAlias.equalsIgnoreCase(fromEntry.getAlias())) {
-							View table = fromEntry.getTableView();
-							columnExpressions.remove(i);
-							i = compileAdd_All_Table_Columns(fromEntry, table, i) - 1;
-							break;
-						}
-					}
-					if (t == tables.size())
-						throw SmallSQLException.create(Language.COL_WRONG_PREFIX, new Object[] { tableAlias });
-				} else {
-					// Syntax *
-					columnExpressions.remove(i);
-					for (int t = 0; t < tables.size(); t++) {
-						DataSource fromEntry = tables.get(t);
-						View table = fromEntry.getTableView();
-						i = compileAdd_All_Table_Columns(fromEntry, table, i);
-					}
-					i--;
-				}
-			} else {
-				// not a * Syntax
-				compileLinkExpressionName(expr);
-			}
+            if ("*".equals(expr.getName())) {
+                String tableAlias = expr.getTableAlias();
+                if (tableAlias != null) {
+                    // Syntax: tableAlias.*
+                    int t = 0;
+                    for (; t < tables.size(); t++) {
+                        DataSource fromEntry = tables.get(t);
+                        if (tableAlias.equalsIgnoreCase(fromEntry.getAlias())) {
+                            View table = fromEntry.getTableView();
+                            columnExpressions.remove(i);
+                            i = compileAdd_All_Table_Columns(fromEntry, table, i) - 1;
+                            break;
+                        }
+                    }
+                    if (t == tables.size())
+                        throw SmallSQLException.create(Language.COL_WRONG_PREFIX, new Object[]{tableAlias});
+                } else {
+                    // Syntax *
+                    columnExpressions.remove(i);
+                    for (int t = 0; t < tables.size(); t++) {
+                        DataSource fromEntry = tables.get(t);
+                        View table = fromEntry.getTableView();
+                        i = compileAdd_All_Table_Columns(fromEntry, table, i);
+                    }
+                    i--;
+                }
+            } else {
+                // not a * Syntax
+                compileLinkExpressionName(expr);
+            }
 
-		}
-		if (where != null)
-			compileLinkExpression(where);
-		if (having != null)
-			compileLinkExpression(having);
-		if (orderBy != null) {
-			for (int i = 0; i < orderBy.size(); i++) {
-				compileLinkExpression(orderBy.get(i));
-			}
-		}
-		if (groupBy != null) {
-			for (int i = 0; i < groupBy.size(); i++) {
-				compileLinkExpression(groupBy.get(i));
-			}
-		}
+        }
+        if (where != null)
+            compileLinkExpression(where);
+        if (having != null)
+            compileLinkExpression(having);
+        if (orderBy != null) {
+            for (int i = 0; i < orderBy.size(); i++) {
+                compileLinkExpression(orderBy.get(i));
+            }
+        }
+        if (groupBy != null) {
+            for (int i = 0; i < groupBy.size(); i++) {
+                compileLinkExpression(groupBy.get(i));
+            }
+        }
 
-		if (from instanceof Join) {
-			compileJoin((Join) from);
-		}
+        if (from instanceof Join) {
+            compileJoin((Join) from);
+        }
 
-		if (where != null) {
-			from = new Where(from, where);
-		}
+        if (where != null) {
+            from = new Where(from, where);
+        }
 
-		if (isGroupResult()) {
-			from = new GroupResult(this, from, groupBy, having, orderBy);
-			if (having != null) {
-				from = new Where(from, having);
-			}
-		}
+        if (isGroupResult()) {
+            from = new GroupResult(this, from, groupBy, having, orderBy);
+            if (having != null) {
+                from = new Where(from, having);
+            }
+        }
 
-		if (isDistinct) {
-			from = new Distinct(from, columnExpressions);
-		}
+        if (isDistinct) {
+            from = new Distinct(from, columnExpressions);
+        }
 
-		if (orderBy != null) {
-			from = new SortedResult(from, orderBy);
-		}
+        if (orderBy != null) {
+            from = new SortedResult(from, orderBy);
+        }
 
-		return true;
-	}
+        return true;
+    }
 
-	/**
-	 * If this ResultSet is use any type of grouping. This means that
-	 * GroupResult need create and that the ResultSet is not updatable.
-	 */
-	public final boolean isGroupResult() {
-		return groupBy != null || having != null || isAggregateFunction;
-	}
+    /**
+     * If this ResultSet is use any type of grouping. This means that
+     * GroupResult need create and that the ResultSet is not updatable.
+     */
+    public final boolean isGroupResult() {
+        return groupBy != null || having != null || isAggregateFunction;
+    }
 
-	/**
-	 * Set the link between the Named Expression and the Table object in the
-	 * condition. If there are cascade Joins then follow the tree with a
-	 * recursion.
-	 */
-	private void compileJoin(Join singleJoin) throws Exception {
-		if (singleJoin.condition != null)
-			compileLinkExpressionParams(singleJoin.condition);
-		if (singleJoin.left instanceof Join) {
-			compileJoin((Join) singleJoin.left);
-		}
-		if (singleJoin.right instanceof Join) {
-			compileJoin((Join) singleJoin.right);
-		}
-	}
+    /**
+     * Set the link between the Named Expression and the Table object in the
+     * condition. If there are cascade Joins then follow the tree with a
+     * recursion.
+     */
+    private void compileJoin(Join singleJoin) throws Exception {
+        if (singleJoin.condition != null)
+            compileLinkExpressionParams(singleJoin.condition);
+        if (singleJoin.left instanceof Join) {
+            compileJoin((Join) singleJoin.left);
+        }
+        if (singleJoin.right instanceof Join) {
+            compileJoin((Join) singleJoin.right);
+        }
+    }
 
-	private void compileLinkExpression(Expression expr) throws Exception {
-		if (expr.getType() == Expression.NAME)
-			compileLinkExpressionName((ExpressionName) expr);
-		else
-			compileLinkExpressionParams(expr);
-	}
+    private void compileLinkExpression(Expression expr) throws Exception {
+        if (expr.getType() == Expression.NAME)
+            compileLinkExpressionName((ExpressionName) expr);
+        else
+            compileLinkExpressionParams(expr);
+    }
 
-	/**
-	 * Set the connection (link) of a named Expression to the table and the
-	 * column index. This means a column name in the SQL statement is link to it
-	 * table source.
-	 */
-	private void compileLinkExpressionName(ExpressionName expr) throws Exception {
-		String tableAlias = expr.getTableAlias();
-		if (tableAlias != null) {
-			int t = 0;
-			for (; t < tables.size(); t++) {
-				DataSource fromEntry = tables.get(t);
-				if (tableAlias.equalsIgnoreCase(fromEntry.getAlias())) {
-					View table = fromEntry.getTableView();
-					int colIdx = table.findColumnIdx(expr.getName());
-					if (colIdx >= 0) {
-						// Column was find and now we set the DataSouce, column
-						// index and TableView.
-						expr.setFrom(fromEntry, colIdx, table);
-						break;
-					} else
-						throw SmallSQLException.create(Language.COL_INVALID_NAME, new Object[] { expr.getName() });
-				}
-			}
-			if (t == tables.size())
-				throw SmallSQLException.create(Language.COL_WRONG_PREFIX, tableAlias);
-		} else {
-			// column name without table name
-			boolean isSetFrom = false;
-			for (int t = 0; t < tables.size(); t++) {
-				DataSource fromEntry = tables.get(t);
-				View table = fromEntry.getTableView();
-				int colIdx = table.findColumnIdx(expr.getName());
-				if (colIdx >= 0) {
-					if (isSetFrom) {
-						// Column was already set. This means the column is
-						// ambiguous
-						throw SmallSQLException.create(Language.COL_AMBIGUOUS, expr.getName());
-					}
-					// Column was find and now we set the DataSouce, column
-					// index and TableView.
-					isSetFrom = true;
-					expr.setFrom(fromEntry, colIdx, table);
-				}
-			}
-			if (!isSetFrom) {
-				throw SmallSQLException.create(Language.COL_INVALID_NAME, expr.getName());
-			}
-		}
-		compileLinkExpressionParams(expr);
-	}
+    /**
+     * Set the connection (link) of a named Expression to the table and the
+     * column index. This means a column name in the SQL statement is link to it
+     * table source.
+     */
+    private void compileLinkExpressionName(ExpressionName expr) throws Exception {
+        String tableAlias = expr.getTableAlias();
+        if (tableAlias != null) {
+            int t = 0;
+            for (; t < tables.size(); t++) {
+                DataSource fromEntry = tables.get(t);
+                if (tableAlias.equalsIgnoreCase(fromEntry.getAlias())) {
+                    View table = fromEntry.getTableView();
+                    int colIdx = table.findColumnIdx(expr.getName());
+                    if (colIdx >= 0) {
+                        // Column was find and now we set the DataSouce, column
+                        // index and TableView.
+                        expr.setFrom(fromEntry, colIdx, table);
+                        break;
+                    } else
+                        throw SmallSQLException.create(Language.COL_INVALID_NAME, new Object[]{expr.getName()});
+                }
+            }
+            if (t == tables.size())
+                throw SmallSQLException.create(Language.COL_WRONG_PREFIX, tableAlias);
+        } else {
+            // column name without table name
+            boolean isSetFrom = false;
+            for (int t = 0; t < tables.size(); t++) {
+                DataSource fromEntry = tables.get(t);
+                View table = fromEntry.getTableView();
+                int colIdx = table.findColumnIdx(expr.getName());
+                if (colIdx >= 0) {
+                    if (isSetFrom) {
+                        // Column was already set. This means the column is
+                        // ambiguous
+                        throw SmallSQLException.create(Language.COL_AMBIGUOUS, expr.getName());
+                    }
+                    // Column was find and now we set the DataSouce, column
+                    // index and TableView.
+                    isSetFrom = true;
+                    expr.setFrom(fromEntry, colIdx, table);
+                }
+            }
+            if (!isSetFrom) {
+                throw SmallSQLException.create(Language.COL_INVALID_NAME, expr.getName());
+            }
+        }
+        compileLinkExpressionParams(expr);
+    }
 
-	private void compileLinkExpressionParams(Expression expr) throws Exception {
-		// check sub Expression (parameters)
-		Expression[] expParams = expr.getParams();
-		isAggregateFunction = isAggregateFunction || expr.getType() >= Expression.GROUP_BEGIN;
-		if (expParams != null) {
-			for (int k = 0; k < expParams.length; k++) {
-				Expression param = expParams[k];
-				int paramType = param.getType();
-				isAggregateFunction = isAggregateFunction || paramType >= Expression.GROUP_BEGIN;
-				if (paramType == Expression.NAME)
-					compileLinkExpressionName((ExpressionName) param);
-				else
-					compileLinkExpressionParams(param);
-			}
-		}
-		expr.optimize();
-	}
+    private void compileLinkExpressionParams(Expression expr) throws Exception {
+        // check sub Expression (parameters)
+        Expression[] expParams = expr.getParams();
+        isAggregateFunction = isAggregateFunction || expr.getType() >= Expression.GROUP_BEGIN;
+        if (expParams != null) {
+            for (int k = 0; k < expParams.length; k++) {
+                Expression param = expParams[k];
+                int paramType = param.getType();
+                isAggregateFunction = isAggregateFunction || paramType >= Expression.GROUP_BEGIN;
+                if (paramType == Expression.NAME)
+                    compileLinkExpressionName((ExpressionName) param);
+                else
+                    compileLinkExpressionParams(param);
+            }
+        }
+        expr.optimize();
+    }
 
-	private final int compileAdd_All_Table_Columns(DataSource fromEntry, View table, int position) {
-		for (int k = 0; k < table.columns.size(); k++) {
-			ExpressionName expr = new ExpressionName(table.columns.get(k).getName());
-			expr.setFrom(fromEntry, k, table);
-			columnExpressions.add(position++, expr);
-		}
-		return position;
-	}
+    private final int compileAdd_All_Table_Columns(DataSource fromEntry, View table, int position) {
+        for (int k = 0; k < table.columns.size(); k++) {
+            ExpressionName expr = new ExpressionName(table.columns.get(k).getName());
+            expr.setFrom(fromEntry, k, table);
+            columnExpressions.add(position++, expr);
+        }
+        return position;
+    }
 
-	/**
-	 * The main method to execute this Command and create a ResultSet.
-	 */
-	public void executeImpl(SsConnection con, SsStatement st) throws Exception {
-		compile(con);
-		if ((st.rsType == ResultSet.TYPE_SCROLL_INSENSITIVE || st.rsType == ResultSet.TYPE_SCROLL_SENSITIVE)
-				&& !from.isScrollable()) {
-			from = new Scrollable(from);
-		}
-		from.execute();
-		rs = new SsResultSet(st, this);
-	}
+    /**
+     * The main method to execute this Command and create a ResultSet.
+     */
+    public void executeImpl(SsConnection con, SsStatement st) throws Exception {
+        compile(con);
+        if ((st.rsType == ResultSet.TYPE_SCROLL_INSENSITIVE || st.rsType == ResultSet.TYPE_SCROLL_SENSITIVE)
+                && !from.isScrollable()) {
+            from = new Scrollable(from);
+        }
+        from.execute();
+        rs = new SsResultSet(st, this);
+    }
 
-	/**
-	 * Is used from ResultSet.beforeFirst().
-	 *
-	 */
-	public void beforeFirst() throws Exception {
-		from.beforeFirst();
-	}
+    /**
+     * Is used from ResultSet.beforeFirst().
+     */
+    public void beforeFirst() throws Exception {
+        from.beforeFirst();
+    }
 
-	/**
-	 * Is used from ResultSet.isBeforeFirst().
-	 */
-	public boolean isBeforeFirst() throws SQLException {
-		return from.isBeforeFirst();
-	}
+    /**
+     * Is used from ResultSet.isBeforeFirst().
+     */
+    public boolean isBeforeFirst() throws SQLException {
+        return from.isBeforeFirst();
+    }
 
-	/**
-	 * Is used from ResultSet.isFirst().
-	 */
-	public boolean isFirst() throws SQLException {
-		return from.isFirst();
-	}
+    /**
+     * Is used from ResultSet.isFirst().
+     */
+    public boolean isFirst() throws SQLException {
+        return from.isFirst();
+    }
 
-	/**
-	 * Is used from ResultSet.first().
-	 */
-	public boolean first() throws Exception {
-		return from.first();
-	}
+    /**
+     * Is used from ResultSet.first().
+     */
+    public boolean first() throws Exception {
+        return from.first();
+    }
 
-	/**
-	 * Is used from ResultSet.previous().
-	 */
-	public boolean previous() throws Exception {
-		return from.previous();
-	}
+    /**
+     * Is used from ResultSet.previous().
+     */
+    public boolean previous() throws Exception {
+        return from.previous();
+    }
 
-	/**
-	 * move to the next row.
-	 * 
-	 * @return true if the next row valid
-	 * @throws Exception
-	 */
-	public boolean next() throws Exception {
-		if (maxRows >= 0 && from.getRow() >= maxRows) {
-			from.afterLast();
-			return false;
-		}
-		return from.next();
-	}
+    /**
+     * move to the next row.
+     *
+     * @return true if the next row valid
+     * @throws Exception
+     */
+    public boolean next() throws Exception {
+        if (maxRows >= 0 && from.getRow() >= maxRows) {
+            from.afterLast();
+            return false;
+        }
+        return from.next();
+    }
 
-	/**
-	 * Is used from ResultSet.last().
-	 */
-	public final boolean last() throws Exception {
-		if (maxRows >= 0) {
-			if (maxRows == 0) {
-				from.beforeFirst();
-				return false;
-			}
-			return from.absolute(maxRows);
-		}
-		return from.last();
-	}
+    /**
+     * Is used from ResultSet.last().
+     */
+    public final boolean last() throws Exception {
+        if (maxRows >= 0) {
+            if (maxRows == 0) {
+                from.beforeFirst();
+                return false;
+            }
+            return from.absolute(maxRows);
+        }
+        return from.last();
+    }
 
-	/**
-	 * Is used from ResultSet.afterLast().
-	 */
-	public final void afterLast() throws Exception {
-		from.afterLast();
-	}
+    /**
+     * Is used from ResultSet.afterLast().
+     */
+    public final void afterLast() throws Exception {
+        from.afterLast();
+    }
 
-	/**
-	 * Is used from ResultSet.isLast().
-	 */
-	public boolean isLast() throws Exception {
-		return from.isLast();
-	}
+    /**
+     * Is used from ResultSet.isLast().
+     */
+    public boolean isLast() throws Exception {
+        return from.isLast();
+    }
 
-	/**
-	 * Is used from ResultSet.isAfterLast().
-	 */
-	public boolean isAfterLast() throws Exception {
-		return from.isAfterLast();
-	}
+    /**
+     * Is used from ResultSet.isAfterLast().
+     */
+    public boolean isAfterLast() throws Exception {
+        return from.isAfterLast();
+    }
 
-	/**
-	 * Is used from ResultSet.absolute().
-	 */
-	public final boolean absolute(int row) throws Exception {
-		return from.absolute(row);
-	}
+    /**
+     * Is used from ResultSet.absolute().
+     */
+    public final boolean absolute(int row) throws Exception {
+        return from.absolute(row);
+    }
 
-	/**
-	 * Is used from ResultSet.relative().
-	 */
-	public final boolean relative(int rows) throws Exception {
-		return from.relative(rows);
-	}
+    /**
+     * Is used from ResultSet.relative().
+     */
+    public final boolean relative(int rows) throws Exception {
+        return from.relative(rows);
+    }
 
-	/**
-	 * Is used from ResultSet.afterLast().
-	 */
-	public final int getRow() throws Exception {
-		int row = from.getRow();
-		if (maxRows >= 0 && row > maxRows)
-			return 0;
-		return row;
-	}
+    /**
+     * Is used from ResultSet.afterLast().
+     */
+    public final int getRow() throws Exception {
+        int row = from.getRow();
+        if (maxRows >= 0 && row > maxRows)
+            return 0;
+        return row;
+    }
 
-	public final void updateRow(SsConnection con, Expression[] newRowSources) throws SQLException {
-		int savepoint = con.getSavepoint();
-		try {
-			// loop through all tables of this ResultSet
-			for (int t = 0; t < tables.size(); t++) {
-				TableViewResult result = TableViewResult.getTableViewResult(tables.get(t));
-				View table = result.getTableView();
-				Columns tableColumns = table.columns;
-				int count = tableColumns.size();
+    public final void updateRow(SsConnection con, Expression[] newRowSources) throws SQLException {
+        int savepoint = con.getSavepoint();
+        try {
+            // loop through all tables of this ResultSet
+            for (int t = 0; t < tables.size(); t++) {
+                TableViewResult result = TableViewResult.getTableViewResult(tables.get(t));
+                View table = result.getTableView();
+                Columns tableColumns = table.columns;
+                int count = tableColumns.size();
 
-				// order the new Values after it position in the table
-				Expression[] updateValues = new Expression[count];
-				boolean isUpdateNeeded = false;
-				for (int i = 0; i < columnExpressions.size(); i++) {
-					Expression src = newRowSources[i];
-					if (src != null && (!(src instanceof ExpressionValue) || !((ExpressionValue) src).isEmpty())) {
-						Expression col = columnExpressions.get(i);
-						if (!col.isDefinitelyWritable())
-							throw SmallSQLException.create(Language.COL_READONLY, new Integer(i));
-						ExpressionName exp = (ExpressionName) col;
-						if (table == exp.getTable()) {
-							updateValues[exp.getColumnIndex()] = src;
-							isUpdateNeeded = true;
-							continue;
-						}
-					}
-				}
+                // order the new Values after it position in the table
+                Expression[] updateValues = new Expression[count];
+                boolean isUpdateNeeded = false;
+                for (int i = 0; i < columnExpressions.size(); i++) {
+                    Expression src = newRowSources[i];
+                    if (src != null && (!(src instanceof ExpressionValue) || !((ExpressionValue) src).isEmpty())) {
+                        Expression col = columnExpressions.get(i);
+                        if (!col.isDefinitelyWritable())
+                            throw SmallSQLException.create(Language.COL_READONLY, new Integer(i));
+                        ExpressionName exp = (ExpressionName) col;
+                        if (table == exp.getTable()) {
+                            updateValues[exp.getColumnIndex()] = src;
+                            isUpdateNeeded = true;
+                            continue;
+                        }
+                    }
+                }
 
-				// save the new values if there are new value for this table
-				if (isUpdateNeeded) {
-					result.updateRow(updateValues);
-				}
-			}
-		} catch (Throwable e) {
-			con.rollback(savepoint);
-			throw SmallSQLException.createFromException(e);
-		} finally {
-			if (con.getAutoCommit())
-				con.commit();
-		}
-	}
+                // save the new values if there are new value for this table
+                if (isUpdateNeeded) {
+                    result.updateRow(updateValues);
+                }
+            }
+        } catch (Throwable e) {
+            con.rollback(savepoint);
+            throw SmallSQLException.createFromException(e);
+        } finally {
+            if (con.getAutoCommit())
+                con.commit();
+        }
+    }
 
-	public final void insertRow(SsConnection con, Expression[] newRowSources) throws SQLException {
-		if (tables.size() > 1)
-			throw SmallSQLException.create(Language.JOIN_INSERT);
-		if (tables.size() == 0)
-			throw SmallSQLException.create(Language.INSERT_WO_FROM);
+    public final void insertRow(SsConnection con, Expression[] newRowSources) throws SQLException {
+        if (tables.size() > 1)
+            throw SmallSQLException.create(Language.JOIN_INSERT);
+        if (tables.size() == 0)
+            throw SmallSQLException.create(Language.INSERT_WO_FROM);
 
-		int savepoint = con.getSavepoint();
-		try {
-			TableViewResult result = TableViewResult.getTableViewResult(tables.get(0));
-			View table = result.getTableView();
-			Columns tabColumns = table.columns;
-			int count = tabColumns.size();
+        int savepoint = con.getSavepoint();
+        try {
+            TableViewResult result = TableViewResult.getTableViewResult(tables.get(0));
+            View table = result.getTableView();
+            Columns tabColumns = table.columns;
+            int count = tabColumns.size();
 
-			// order the new Values after it position in the table
-			Expression[] updateValues = new Expression[count];
-			if (newRowSources != null) {
-				for (int i = 0; i < columnExpressions.size(); i++) {
-					Expression src = newRowSources[i];
-					if (src != null && (!(src instanceof ExpressionValue) || !((ExpressionValue) src).isEmpty())) {
-						Expression rsColumn = columnExpressions.get(i); // Column
-																		// of
-																		// the
-																		// ResultSet
-						if (!rsColumn.isDefinitelyWritable())
-							throw SmallSQLException.create(Language.COL_READONLY, new Integer(i));
-						ExpressionName exp = (ExpressionName) rsColumn;
-						if (table == exp.getTable()) {
-							updateValues[exp.getColumnIndex()] = src;
-							continue;
-						}
-					}
-					updateValues[i] = null;
-				}
-			}
+            // order the new Values after it position in the table
+            Expression[] updateValues = new Expression[count];
+            if (newRowSources != null) {
+                for (int i = 0; i < columnExpressions.size(); i++) {
+                    Expression src = newRowSources[i];
+                    if (src != null && (!(src instanceof ExpressionValue) || !((ExpressionValue) src).isEmpty())) {
+                        Expression rsColumn = columnExpressions.get(i); // Column
+                        // of
+                        // the
+                        // ResultSet
+                        if (!rsColumn.isDefinitelyWritable())
+                            throw SmallSQLException.create(Language.COL_READONLY, new Integer(i));
+                        ExpressionName exp = (ExpressionName) rsColumn;
+                        if (table == exp.getTable()) {
+                            updateValues[exp.getColumnIndex()] = src;
+                            continue;
+                        }
+                    }
+                    updateValues[i] = null;
+                }
+            }
 
-			// save the new values if there are new value for this table
-			result.insertRow(updateValues);
-		} catch (Throwable e) {
-			con.rollback(savepoint);
-			throw SmallSQLException.createFromException(e);
-		} finally {
-			if (con.getAutoCommit())
-				con.commit();
-		}
-	}
+            // save the new values if there are new value for this table
+            result.insertRow(updateValues);
+        } catch (Throwable e) {
+            con.rollback(savepoint);
+            throw SmallSQLException.createFromException(e);
+        } finally {
+            if (con.getAutoCommit())
+                con.commit();
+        }
+    }
 
-	public final void deleteRow(SsConnection con) throws SQLException {
-		int savepoint = con.getSavepoint();
-		try {
-			if (tables.size() > 1)
-				throw SmallSQLException.create(Language.JOIN_DELETE);
-			if (tables.size() == 0)
-				throw SmallSQLException.create(Language.DELETE_WO_FROM);
-			TableViewResult.getTableViewResult(tables.get(0)).deleteRow();
-		} catch (Throwable e) {
-			con.rollback(savepoint);
-			throw SmallSQLException.createFromException(e);
-		} finally {
-			if (con.getAutoCommit())
-				con.commit();
-		}
-	}
+    public final void deleteRow(SsConnection con) throws SQLException {
+        int savepoint = con.getSavepoint();
+        try {
+            if (tables.size() > 1)
+                throw SmallSQLException.create(Language.JOIN_DELETE);
+            if (tables.size() == 0)
+                throw SmallSQLException.create(Language.DELETE_WO_FROM);
+            TableViewResult.getTableViewResult(tables.get(0)).deleteRow();
+        } catch (Throwable e) {
+            con.rollback(savepoint);
+            throw SmallSQLException.createFromException(e);
+        } finally {
+            if (con.getAutoCommit())
+                con.commit();
+        }
+    }
 
-	/**
-	 * The returning index start at 0.
-	 */
-	public int findColumn(String columnName) throws SQLException {
-		Expressions columns = columnExpressions;
-		// FIXME performance
-		for (int i = 0; i < columns.size(); i++) {
-			if (columnName.equalsIgnoreCase(columns.get(i).getAlias()))
-				return i;
-		}
-		throw SmallSQLException.create(Language.COL_MISSING, columnName);
-	}
+    /**
+     * The returning index start at 0.
+     */
+    public int findColumn(String columnName) throws SQLException {
+        Expressions columns = columnExpressions;
+        // FIXME performance
+        for (int i = 0; i < columns.size(); i++) {
+            if (columnName.equalsIgnoreCase(columns.get(i).getAlias()))
+                return i;
+        }
+        throw SmallSQLException.create(Language.COL_MISSING, columnName);
+    }
 
-	/**
-	 * Set if the keyword DISTINCT occur in the SELECT expression.
-	 */
-	public final void setDistinct(boolean distinct) {
-		this.isDistinct = distinct;
-	}
+    /**
+     * Set if the keyword DISTINCT occur in the SELECT expression.
+     */
+    public final void setDistinct(boolean distinct) {
+        this.isDistinct = distinct;
+    }
 
-	/**
-	 * Set the RowSource expression from the FROM clause. The Simples case is
-	 * only a Table (TableResult)
-	 */
-	public final void setSource(RowSource join) {
-		this.from = join;
-	}
+    /**
+     * Set the RowSource expression from the FROM clause. The Simples case is
+     * only a Table (TableResult)
+     */
+    public final void setSource(RowSource join) {
+        this.from = join;
+    }
 
-	/**
-	 * List of all Tables and Views. This is needed to replace the table aliases
-	 * in the columnExpressions with the real sources.
-	 */
-	public final void setTables(DataSources from) {
-		this.tables = from;
-	}
+    /**
+     * List of all Tables and Views. This is needed to replace the table aliases
+     * in the columnExpressions with the real sources.
+     */
+    public final void setTables(DataSources from) {
+        this.tables = from;
+    }
 
-	/**
-	 * Is used from CommandSelect, CommandDelete and CommandUpdate
-	 * 
-	 * @param where
-	 */
-	public final void setWhere(Expression where) {
-		this.where = where;
-	}
+    /**
+     * Is used from CommandSelect, CommandDelete and CommandUpdate
+     *
+     * @param where
+     */
+    public final void setWhere(Expression where) {
+        this.where = where;
+    }
 
-	public final void setGroup(Expressions group) {
-		this.groupBy = group;
-	}
+    public final void setGroup(Expressions group) {
+        this.groupBy = group;
+    }
 
-	public final void setHaving(Expression having) {
-		this.having = having;
-	}
+    public final void setHaving(Expression having) {
+        this.having = having;
+    }
 
-	public final void setOrder(Expressions order) {
-		this.orderBy = order;
-	}
+    public final void setOrder(Expressions order) {
+        this.orderBy = order;
+    }
 
-	public final void setMaxRows(int max) {
-		maxRows = max;
-	}
+    public final void setMaxRows(int max) {
+        maxRows = max;
+    }
 
-	public final int getMaxRows() {
-		return maxRows;
-	}
+    public final int getMaxRows() {
+        return maxRows;
+    }
 }

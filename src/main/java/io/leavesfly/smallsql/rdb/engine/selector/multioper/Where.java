@@ -34,7 +34,7 @@
 package io.leavesfly.smallsql.rdb.engine.selector.multioper;
 
 import io.leavesfly.smallsql.rdb.engine.RowSource;
-import io.leavesfly.smallsql.rdb.sql.Expression;
+import io.leavesfly.smallsql.rdb.sql.expression.Expression;
 import io.leavesfly.smallsql.rdb.sql.expression.Expressions;
 
 public class Where extends RowSource {

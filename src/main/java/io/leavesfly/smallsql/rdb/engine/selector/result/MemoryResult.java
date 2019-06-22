@@ -39,7 +39,7 @@ import java.util.List;
 import io.leavesfly.smallsql.rdb.engine.selector.DataSource;
 import io.leavesfly.smallsql.rdb.engine.table.Column;
 import io.leavesfly.smallsql.rdb.engine.table.Columns;
-import io.leavesfly.smallsql.rdb.sql.Expression;
+import io.leavesfly.smallsql.rdb.sql.expression.Expression;
 import io.leavesfly.smallsql.rdb.sql.datatype.MutableNumeric;
 import io.leavesfly.smallsql.rdb.sql.parser.SQLTokenizer;
 import io.leavesfly.smallsql.jdbc.SmallSQLException;

@@ -39,7 +39,7 @@ import java.nio.channels.FileChannel;
 
 import io.leavesfly.smallsql.rdb.engine.table.Column;
 import io.leavesfly.smallsql.rdb.engine.table.Columns;
-import io.leavesfly.smallsql.rdb.sql.Expression;
+import io.leavesfly.smallsql.rdb.sql.expression.Expression;
 import io.leavesfly.smallsql.rdb.sql.SQLParser;
 import io.leavesfly.smallsql.rdb.sql.expression.ColumnExpression;
 import io.leavesfly.smallsql.rdb.sql.expression.ExpressionName;

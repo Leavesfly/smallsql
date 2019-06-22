@@ -36,7 +36,6 @@ import java.math.BigDecimal;
 import java.sql.*;
 
 import io.leavesfly.smallsql.jdbc.SmallSQLException;
-import io.leavesfly.smallsql.rdb.sql.Expression;
 import io.leavesfly.smallsql.rdb.sql.parser.SQLTokenizer;
 import io.leavesfly.smallsql.util.Utils;
 import io.leavesfly.smallsql.lang.Language;

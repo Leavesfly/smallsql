@@ -35,7 +35,7 @@ package io.leavesfly.smallsql.rdb.engine;
 import java.sql.SQLException;
 import java.util.ArrayList;
 
-import io.leavesfly.smallsql.rdb.sql.Expression;
+import io.leavesfly.smallsql.rdb.sql.expression.Expression;
 import io.leavesfly.smallsql.rdb.sql.datatype.MutableNumeric;
 import io.leavesfly.smallsql.rdb.sql.expression.Expressions;
 import io.leavesfly.smallsql.rdb.sql.parser.SQLTokenizer;

@@ -33,7 +33,6 @@
 package io.leavesfly.smallsql.rdb.sql.expression;
 
 import io.leavesfly.smallsql.rdb.engine.table.Column;
-import io.leavesfly.smallsql.rdb.sql.Expression;
 import io.leavesfly.smallsql.rdb.engine.View;
 import io.leavesfly.smallsql.rdb.engine.selector.DataSource;
 import io.leavesfly.smallsql.rdb.sql.datatype.MutableNumeric;

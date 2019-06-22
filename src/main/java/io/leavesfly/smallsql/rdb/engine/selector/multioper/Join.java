@@ -34,7 +34,7 @@ package io.leavesfly.smallsql.rdb.engine.selector.multioper;
 
 import io.leavesfly.smallsql.rdb.engine.Index;
 import io.leavesfly.smallsql.rdb.engine.RowSource;
-import io.leavesfly.smallsql.rdb.sql.Expression;
+import io.leavesfly.smallsql.rdb.sql.expression.Expression;
 import io.leavesfly.smallsql.util.datastruct.LongTreeListEnum;
 import io.leavesfly.smallsql.rdb.sql.expression.Expressions;
 import io.leavesfly.smallsql.rdb.sql.expression.operator.ExpressionArithmetic;

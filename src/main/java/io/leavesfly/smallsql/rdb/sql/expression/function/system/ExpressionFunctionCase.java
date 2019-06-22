@@ -33,7 +33,7 @@
  */
 package io.leavesfly.smallsql.rdb.sql.expression.function.system;
 
-import io.leavesfly.smallsql.rdb.sql.Expression;
+import io.leavesfly.smallsql.rdb.sql.expression.Expression;
 import io.leavesfly.smallsql.rdb.sql.datatype.MutableNumeric;
 import io.leavesfly.smallsql.rdb.sql.parser.SQLTokenizer;
 import io.leavesfly.smallsql.rdb.sql.expression.Expressions;

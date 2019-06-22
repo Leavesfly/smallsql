@@ -38,7 +38,7 @@ import java.nio.channels.FileChannel;
 import java.sql.SQLException;
 
 import io.leavesfly.smallsql.rdb.engine.table.Column;
-import io.leavesfly.smallsql.rdb.sql.Expression;
+import io.leavesfly.smallsql.rdb.sql.expression.Expression;
 import io.leavesfly.smallsql.rdb.sql.SQLParser;
 import io.leavesfly.smallsql.jdbc.SmallSQLException;
 import io.leavesfly.smallsql.jdbc.SsConnection;

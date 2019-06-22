@@ -34,7 +34,6 @@
 package io.leavesfly.smallsql.rdb.sql.expression;
 
 import io.leavesfly.smallsql.rdb.engine.table.Column;
-import io.leavesfly.smallsql.rdb.sql.Expression;
 
 
 /**

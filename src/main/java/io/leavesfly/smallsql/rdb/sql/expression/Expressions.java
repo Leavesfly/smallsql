@@ -32,8 +32,6 @@
  */
 package io.leavesfly.smallsql.rdb.sql.expression;
 
-import io.leavesfly.smallsql.rdb.sql.Expression;
-
 /**
  * @author Volker Berlin
  *

@@ -44,7 +44,7 @@ import io.leavesfly.smallsql.jdbc.SsConnection;
 import io.leavesfly.smallsql.rdb.command.dql.CommandSelect;
 import io.leavesfly.smallsql.rdb.engine.Database;
 import io.leavesfly.smallsql.rdb.engine.selector.result.MemoryResult;
-import io.leavesfly.smallsql.rdb.sql.Expression;
+import io.leavesfly.smallsql.rdb.sql.expression.Expression;
 import io.leavesfly.smallsql.rdb.sql.expression.ExpressionName;
 import io.leavesfly.smallsql.lang.Language;
 import io.leavesfly.smallsql.rdb.sql.expression.Expressions;

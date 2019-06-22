@@ -43,7 +43,7 @@ import io.leavesfly.smallsql.rdb.engine.View;
 import io.leavesfly.smallsql.rdb.engine.ViewTable;
 import io.leavesfly.smallsql.rdb.engine.selector.DataSource;
 import io.leavesfly.smallsql.rdb.engine.selector.multioper.Where;
-import io.leavesfly.smallsql.rdb.sql.Expression;
+import io.leavesfly.smallsql.rdb.sql.expression.Expression;
 import io.leavesfly.smallsql.rdb.sql.parser.SQLTokenizer;
 import io.leavesfly.smallsql.lang.Language;
 

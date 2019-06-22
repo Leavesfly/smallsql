@@ -43,7 +43,7 @@ import java.net.URL;
 
 import io.leavesfly.smallsql.jdbc.metadata.SsResultSetMetaData;
 import io.leavesfly.smallsql.jdbc.statement.SsStatement;
-import io.leavesfly.smallsql.rdb.sql.Expression;
+import io.leavesfly.smallsql.rdb.sql.expression.Expression;
 import io.leavesfly.smallsql.rdb.sql.parser.SQLTokenizer;
 import io.leavesfly.smallsql.lang.Language;
 import io.leavesfly.smallsql.rdb.command.dql.CommandSelect;
@@ -1325,13 +1325,11 @@ public class SsResultSet implements ResultSet {
 
 	}
 
-	@Override
 	public <T> T getObject(int columnIndex, Class<T> type) throws SQLException {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
-	@Override
 	public <T> T getObject(String columnLabel, Class<T> type)
 			throws SQLException {
 		// TODO Auto-generated method stub
