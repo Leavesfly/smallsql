@@ -30,7 +30,7 @@
  * Author: Volker Berlin
  * 
  */
-package io.leavesfly.smallsql.jdbc.driver;
+package io.leavesfly.smallsql;
 
 import java.sql.*;
 import java.util.Properties;

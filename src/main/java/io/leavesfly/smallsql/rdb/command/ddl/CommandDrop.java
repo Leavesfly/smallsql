@@ -64,8 +64,8 @@ public class CommandDrop extends Command {
 				throw SmallSQLException.create(Language.DB_NONEXISTENT, name);
 			File files[] = dir.listFiles();
 			if (files != null)
-				for (int i = 0; i < files.length; i++) {
-					files[i].delete();
+				for (File file : files) {
+					file.delete();
 				}
 			dir.delete();
 			break;

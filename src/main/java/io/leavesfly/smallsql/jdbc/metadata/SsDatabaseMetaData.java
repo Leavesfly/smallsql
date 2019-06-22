@@ -39,7 +39,7 @@ import io.leavesfly.smallsql.rdb.sql.datatype.Strings;
 import io.leavesfly.smallsql.jdbc.SmallSQLException;
 import io.leavesfly.smallsql.jdbc.SsConnection;
 import io.leavesfly.smallsql.jdbc.SsResultSet;
-import io.leavesfly.smallsql.jdbc.driver.SsDriver;
+import io.leavesfly.smallsql.SsDriver;
 import io.leavesfly.smallsql.jdbc.statement.SsStatement;
 import io.leavesfly.smallsql.rdb.command.dql.CommandSelect;
 import io.leavesfly.smallsql.rdb.engine.Database;
