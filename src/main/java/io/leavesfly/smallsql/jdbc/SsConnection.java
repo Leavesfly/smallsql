@@ -64,23 +64,68 @@ import io.leavesfly.smallsql.logger.Logger;
 import io.leavesfly.smallsql.rdb.engine.Database;
 import io.leavesfly.smallsql.rdb.engine.TransactionStep;
 
+/**
+ * SmallSQL 数据库连接实现类。
+ * <p>
+ * 这个类实现了 java.sql.Connection 接口，代表与 SmallSQL 数据库的一个连接。
+ * 它负责管理事务、语句创建、元数据访问等功能。
+ * <p>
+ * 一个连接可以被多个线程共享，但不能同时使用。连接对象不是线程安全的。
+ */
 public class SsConnection implements Connection {
 
+    /**
+     * 连接是否为只读模式
+     */
     private boolean readOnly;
+    
+    /**
+     * 连接的数据库实例
+     */
     private Database database;
+    
+    /**
+     * 是否自动提交事务，默认为 true
+     */
     private boolean autoCommit = true;
 
     // see also getDefaultTransactionIsolation
-    public int isolationLevel = TRANSACTION_READ_COMMITTED;
-    private List<TransactionStep> commitPages = new ArrayList<TransactionStep>();
     /**
-     * The time on which a transaction is starting.
+     * 事务隔离级别，默认为 TRANSACTION_READ_COMMITTED
+     */
+    public int isolationLevel = TRANSACTION_READ_COMMITTED;
+    
+    /**
+     * 事务步骤列表，用于事务提交或回滚
+     */
+    private List<TransactionStep> commitPages = new ArrayList<TransactionStep>();
+    
+    /**
+     * 事务开始的时间
      */
     private long transactionTime;
+    
+    /**
+     * 数据库元数据对象
+     */
     private final SsDatabaseMetaData metadata;
+    
+    /**
+     * 结果集的可保持性
+     */
     private int holdability;
+    
+    /**
+     * 日志记录器
+     */
     public final Logger log;
 
+    /**
+     * 构造一个新的数据库连接
+     *
+     * @param props 连接属性，包括数据库路径、只读模式、是否创建数据库等
+     * @throws SQLException 如果连接过程中发生错误
+     */
     public SsConnection(Properties props) throws SQLException {
         SmallSQLException.setLanguage(props.get("locale"));
         log = new Logger();
@@ -92,9 +137,9 @@ public class SsConnection implements Connection {
     }
 
     /**
-     * Create a copy of the Connection with it own transaction room.
+     * 创建一个连接的副本，拥有自己的事务空间
      *
-     * @param con the original Connection
+     * @param con 原始连接
      */
     public SsConnection(SsConnection con) {
         readOnly = con.readOnly;
@@ -104,9 +149,10 @@ public class SsConnection implements Connection {
     }
 
     /**
-     * @param returnNull If null is a valid return value for the case of not connected
-     *                   to a database.
-     * @throws SQLException If not connected and returnNull is false.
+     * 获取连接的数据库实例
+     *
+     * @param returnNull 如果未连接到数据库，是否返回 null
+     * @throws SQLException 如果未连接到数据库且 returnNull 为 false
      */
     public Database getDatabase(boolean returnNull) throws SQLException {
         testClosedConnection();
@@ -116,35 +162,68 @@ public class SsConnection implements Connection {
     }
 
     /**
-     * Get a monitor object for all synchronized blocks on connection base.
-     * Multiple calls return the same object.
+     * 获取用于连接同步块的监视器对象
+     * 多次调用返回相同的对象
      *
-     * @return a unique object of this connection
+     * @return 此连接的唯一对象
      */
     public Object getMonitor() {
         return this;
     }
 
+    /**
+     * 创建 Statement 对象用于执行 SQL 语句
+     *
+     * @return 新创建的 Statement 对象
+     * @throws SQLException 如果创建过程中发生错误
+     */
     @Override
     public Statement createStatement() throws SQLException {
         return new SsStatement(this);
     }
 
+    /**
+     * 创建 PreparedStatement 对象用于执行预编译的 SQL 语句
+     *
+     * @param sql 要预编译的 SQL 语句
+     * @return 新创建的 PreparedStatement 对象
+     * @throws SQLException 如果创建过程中发生错误
+     */
     @Override
     public PreparedStatement prepareStatement(String sql) throws SQLException {
         return new SsPreparedStatement(this, sql);
     }
 
+    /**
+     * 创建 CallableStatement 对象用于执行 SQL 存储过程
+     *
+     * @param sql 要执行的 SQL 语句
+     * @return 新创建的 CallableStatement 对象
+     * @throws SQLException 如果创建过程中发生错误
+     */
     @Override
     public CallableStatement prepareCall(String sql) throws SQLException {
         return new SsCallableStatement(this, sql);
     }
 
+    /**
+     * 将给定的 SQL 语句转换为数据库系统的本地 SQL 语法
+     * SmallSQL 不需要转换，直接返回原 SQL
+     *
+     * @param sql 标准 SQL 语句
+     * @return 数据库系统特定的 SQL 语句
+     */
     @Override
     public String nativeSQL(String sql) {
         return sql;
     }
 
+    /**
+     * 设置连接的自动提交模式
+     *
+     * @param autoCommit true 表示启用自动提交，false 表示禁用自动提交
+     * @throws SQLException 如果设置过程中发生错误
+     */
     @Override
     public void setAutoCommit(boolean autoCommit) throws SQLException {
         if (log.isLogging())
@@ -155,13 +234,18 @@ public class SsConnection implements Connection {
         }
     }
 
+    /**
+     * 获取连接的自动提交模式
+     *
+     * @return 如果启用自动提交返回 true，否则返回 false
+     */
     @Override
     public boolean getAutoCommit() {
         return autoCommit;
     }
 
     /**
-     * Add a page for later commit or rollback.
+     * 添加一个事务步骤，用于后续的提交或回滚操作
      */
     public void add(TransactionStep storePage) throws SQLException {
         testClosedConnection();
@@ -170,6 +254,11 @@ public class SsConnection implements Connection {
         }
     }
 
+    /**
+     * 提交当前事务
+     *
+     * @throws SQLException 如果提交过程中发生错误
+     */
     @Override
     public void commit() throws SQLException {
         log.println("Commit");
@@ -195,7 +284,7 @@ public class SsConnection implements Connection {
     }
 
     /**
-     * Discard all changes of a file because it was deleted.
+     * 由于文件被删除而丢弃所有更改
      */
     public void rollbackFile(FileChannel raFile) throws SQLException {
         testClosedConnection();
@@ -211,6 +300,12 @@ public class SsConnection implements Connection {
         }
     }
 
+    /**
+     * 回滚到指定的保存点
+     *
+     * @param savepoint 保存点位置
+     * @throws SQLException 如果回滚过程中发生错误
+     */
     public void rollback(int savepoint) throws SQLException {
         testClosedConnection();
         synchronized (getMonitor()) {
@@ -222,6 +317,11 @@ public class SsConnection implements Connection {
         }
     }
 
+    /**
+     * 回滚当前事务
+     *
+     * @throws SQLException 如果回滚过程中发生错误
+     */
     @Override
     public void rollback() throws SQLException {
         log.println("Rollback");
@@ -238,6 +338,11 @@ public class SsConnection implements Connection {
         }
     }
 
+    /**
+     * 关闭连接并回滚未提交的事务
+     *
+     * @throws SQLException 如果关闭过程中发生错误
+     */
     @Override
     public void close() throws SQLException {
         rollback();
@@ -247,41 +352,72 @@ public class SsConnection implements Connection {
     }
 
     /**
-     * Test if the connection was closed. for example from another thread.
+     * 测试连接是否已关闭，例如被其他线程关闭
      *
-     * @throws SQLException if the connection was closed.
+     * @throws SQLException 如果连接已关闭
      */
     public final void testClosedConnection() throws SQLException {
         if (isClosed())
             throw SmallSQLException.create(Language.CONNECTION_CLOSED);
     }
 
+    /**
+     * 检查连接是否已关闭
+     *
+     * @return 如果连接已关闭返回 true，否则返回 false
+     */
     @Override
     public boolean isClosed() {
         return (commitPages == null);
     }
 
+    /**
+     * 获取数据库元数据
+     *
+     * @return DatabaseMetaData 对象
+     */
     @Override
     public DatabaseMetaData getMetaData() {
         return metadata;
     }
 
+    /**
+     * 设置连接的只读模式
+     *
+     * @param readOnly true 表示设置为只读模式
+     */
     @Override
     public void setReadOnly(boolean readOnly) {
         // TODO Connection ReadOnly implementing
     }
 
+    /**
+     * 检查连接是否为只读模式
+     *
+     * @return 如果连接为只读模式返回 true，否则返回 false
+     */
     @Override
     public boolean isReadOnly() {
         return readOnly;
     }
 
+    /**
+     * 设置连接的当前目录（数据库）
+     *
+     * @param catalog 数据库名称
+     * @throws SQLException 如果设置过程中发生错误
+     */
     @Override
     public void setCatalog(String catalog) throws SQLException {
         testClosedConnection();
         database = Database.getDatabase(catalog, this, false);
     }
 
+    /**
+     * 获取连接的当前目录（数据库）名称
+     *
+     * @return 当前数据库名称，如果没有连接到数据库则返回空字符串
+     */
     @Override
     public String getCatalog() {
         if (database == null)
@@ -289,6 +425,12 @@ public class SsConnection implements Connection {
         return database.getName();
     }
 
+    /**
+     * 设置事务隔离级别
+     *
+     * @param level 事务隔离级别
+     * @throws SQLException 如果设置的隔离级别不被支持
+     */
     @Override
     public void setTransactionIsolation(int level) throws SQLException {
         if (!metadata.supportsTransactionIsolationLevel(level)) {
@@ -297,32 +439,71 @@ public class SsConnection implements Connection {
         isolationLevel = level;
     }
 
+    /**
+     * 获取当前事务隔离级别
+     *
+     * @return 当前事务隔离级别
+     */
     @Override
     public int getTransactionIsolation() {
         return isolationLevel;
     }
 
+    /**
+     * 获取连接的警告信息
+     *
+     * @return SQLWarning 对象，如果没有警告则返回 null
+     */
     @Override
     public SQLWarning getWarnings() {
         return null;
     }
 
+    /**
+     * 清除连接的警告信息
+     */
     @Override
     public void clearWarnings() {
         // TODO support for Warnings
     }
 
+    /**
+     * 创建具有指定结果集类型和并发性的 Statement 对象
+     *
+     * @param resultSetType 结果集类型
+     * @param resultSetConcurrency 结果集并发性
+     * @return 新创建的 Statement 对象
+     * @throws SQLException 如果创建过程中发生错误
+     */
     @Override
     public Statement createStatement(int resultSetType, int resultSetConcurrency) throws SQLException {
         return new SsStatement(this, resultSetType, resultSetConcurrency);
     }
 
+    /**
+     * 创建具有指定结果集类型和并发性的 PreparedStatement 对象
+     *
+     * @param sql SQL 语句
+     * @param resultSetType 结果集类型
+     * @param resultSetConcurrency 结果集并发性
+     * @return 新创建的 PreparedStatement 对象
+     * @throws SQLException 如果创建过程中发生错误
+     */
     @Override
     public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency)
             throws SQLException {
         return new SsPreparedStatement(this, sql, resultSetType, resultSetConcurrency);
     }
 
+    /**
+     * 创建具有指定结果集类型和并发性的 CallableStatement 对象
+     *
+     * @param sql SQL 语句
+     * @param resultSetType 结果集类型
+     * @param resultSetConcurrency 结果集并发性
+     * @return 新创建的 CallableStatement 对象
+     * @throws SQLException 如果创建过程中发生错误
+     */
     @Override
     public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency) throws SQLException {
         return new SsCallableStatement(this, sql, resultSetType, resultSetConcurrency);
