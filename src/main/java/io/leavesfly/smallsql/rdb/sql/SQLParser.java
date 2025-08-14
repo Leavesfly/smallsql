@@ -128,13 +128,43 @@ import io.leavesfly.smallsql.rdb.sql.parser.SQLToken;
 import io.leavesfly.smallsql.rdb.sql.parser.SQLTokenizer;
 import io.leavesfly.smallsql.util.Utils;
 
+/**
+ * SQL语句解析器类
+ * <p>
+ * 该类负责将SQL语句字符串解析为可执行的命令对象。它能够处理各种SQL语句，
+ * 包括SELECT、INSERT、UPDATE、DELETE、CREATE、DROP等操作。
+ * </p>
+ */
 public final class SQLParser {
 
+    /**
+     * 数据库连接对象
+     */
     SsConnection con;
+    
+    /**
+     * SQL语句字符数组
+     */
     protected char[] sql;
+    
+    /**
+     * SQL语句的标记列表
+     */
     protected List<SQLToken> tokens;
+    
+    /**
+     * 当前处理的标记索引
+     */
     protected int tokenIdx;
 
+    /**
+     * 解析SQL语句并返回对应的命令对象
+     * 
+     * @param con 数据库连接
+     * @param sqlString SQL语句字符串
+     * @return 解析后的命令对象
+     * @throws SQLException SQL异常
+     */
     public Command parse(SsConnection con, String sqlString)
             throws SQLException {
         this.con = con;
@@ -146,6 +176,13 @@ public final class SQLParser {
         return cmd;
     }
 
+    /**
+     * 解析SQL语句字符数组并返回对应的命令对象
+     * 
+     * @param sql SQL语句字符数组
+     * @return 解析后的命令对象
+     * @throws SQLException SQL异常
+     */
     final private Command parse(char[] sql) throws SQLException {
         this.sql = sql;
         this.tokens = SQLTokenizer.parseSQL(sql);
@@ -185,6 +222,13 @@ public final class SQLParser {
         }
     }
 
+    /**
+     * 解析表达式字符串
+     * 
+     * @param expr 表达式字符串
+     * @return 解析后的表达式对象
+     * @throws SQLException SQL异常
+     */
     public Expression parseExpression(String expr) throws SQLException {
         this.sql = expr.toCharArray();
         this.tokens = SQLTokenizer.parseSQL(sql);
@@ -193,10 +237,10 @@ public final class SQLParser {
     }
 
     /**
-     * Create a syntax error message, using a custom message.
+     * 创建语法错误消息，使用自定义消息
      *
-     * @param token token object; if not null, generates a SYNTAX_BASE_OFS,
-     *              otherwise a SYNTAX_BASE_END.
+     * @param token token对象；如果不为null，则生成SYNTAX_BASE_OFS，否则生成SYNTAX_BASE_END
+     * @param addMessageCode 附加消息代码
      */
     protected SQLException createSyntaxError(SQLToken token, String addMessageCode) {
         String message = getErrorString(token, addMessageCode, null);
@@ -204,12 +248,11 @@ public final class SQLParser {
     }
 
     /**
-     * Create a syntax error message, using a message with a parameter.
+     * 创建语法错误消息，使用带参数的消息
      *
-     * @param token          token object; if not null, generates a SYNTAX_BASE_OFS,
-     *                       otherwise a SYNTAX_BASE_END.
-     * @param addMessageCode additional message[Code] to append.
-     * @param param0         parameter.
+     * @param token          token对象；如果不为null，则生成SYNTAX_BASE_OFS，否则生成SYNTAX_BASE_END
+     * @param addMessageCode 附加消息代码
+     * @param param0         参数
      */
     protected SQLException createSyntaxError(SQLToken token,
                                            String addMessageCode, Object param0) {
@@ -218,11 +261,11 @@ public final class SQLParser {
     }
 
     /**
-     * Create an "Additional keyword required" syntax error.
+     * 创建"需要附加关键字"的语法错误
      *
-     * @param token       token object.
-     * @param validValues valid values.
-     * @return Exception.
+     * @param token       token对象
+     * @param validValues 有效值数组
+     * @return 异常对象
      */
     protected SQLException createSyntaxError(SQLToken token, int[] validValues) {
         String msgStr = SmallSQLException.translateMsg(
@@ -246,12 +289,12 @@ public final class SQLParser {
     }
 
     /**
-     * Create the complete error string (begin + middle + end).
+     * 创建完整的错误字符串（开始+中间+结束）
      *
-     * @param token          token object.
-     * @param middleMsgCode  middle message[code].
-     * @param middleMsgParam middle message[code] parameter.
-     * @return complete error message string.
+     * @param token          token对象
+     * @param middleMsgCode  中间消息代码
+     * @param middleMsgParam 中间消息参数
+     * @return 完整的错误消息字符串
      */
     private String getErrorString(SQLToken token, String middleMsgCode,
                                   Object middleMsgParam) {
@@ -294,6 +337,13 @@ public final class SQLParser {
         return buffer.toString();
     }
 
+    /**
+     * 检查标识符是否有效
+     * 
+     * @param name 标识符名称
+     * @param token SQL标记
+     * @throws SQLException SQL异常
+     */
     protected void checkValidIdentifier(String name, SQLToken token)
             throws SQLException {
         if (token.value == SQLTokenizer.ASTERISK)
@@ -312,11 +362,11 @@ public final class SQLParser {
     }
 
     /**
-     * Returns a valid identifier from this token.
+     * 从标记中获取有效的标识符
      *
-     * @param token the token of the identifier
-     * @return the string with the name
-     * @throws SQLException if the identifier is invalid
+     * @param token 标识符的标记
+     * @return 标识符名称字符串
+     * @throws SQLException 如果标识符无效则抛出异常
      */
     protected String getIdentifier(SQLToken token) throws SQLException {
         String name = token.getName(sql);
@@ -325,26 +375,25 @@ public final class SQLParser {
     }
 
     /**
-     * Returns a valid identifier from the next token from token stack.
+     * 从标记栈中获取下一个有效的标识符
      *
-     * @return the string with the name
-     * @throws SQLException if the identifier is invalid
+     * @return 标识符名称字符串
+     * @throws SQLException 如果标识符无效则抛出异常
      */
     protected String nextIdentifier() throws SQLException {
         return getIdentifier(nextToken(MISSING_IDENTIFIER));
     }
 
     /**
-     * Check if the identifier is a 2 part name with a point in the middle like
-     * FIRST.SECOND
+     * 检查标识符是否是带有点的两部分名称，如FIRST.SECOND
      *
-     * @param name the name of the first part
-     * @return the second part if exist else returns the first part
-     * @throws SQLException
+     * @param name 第一部分的名称
+     * @return 如果存在第二部分则返回第二部分，否则返回第一部分
+     * @throws SQLException SQL异常
      */
     protected String nextIdentiferPart(String name) throws SQLException {
         SQLToken token = nextToken();
-        // check if the object name include a database name
+        // 检查对象名称是否包含数据库名称
         if (token != null && token.value == SQLTokenizer.POINT) {
             return nextIdentifier();
         } else {
@@ -353,6 +402,12 @@ public final class SQLParser {
         return name;
     }
 
+    /**
+     * 判断标记是否为关键字
+     * 
+     * @param token SQL标记
+     * @return 如果是关键字返回true，否则返回false
+     */
     final protected boolean isKeyword(SQLToken token) {
         if (token == null)
             return false;
@@ -376,7 +431,9 @@ public final class SQLParser {
     }
 
     /**
-     * Return the last token that the method nextToken has return
+     * 返回方法nextToken返回的最后一个标记
+     * 
+     * @return SQL标记对象
      */
     protected SQLToken lastToken() {
         if (tokenIdx > tokens.size()) {
@@ -385,28 +442,42 @@ public final class SQLParser {
         return (SQLToken) tokens.get(tokenIdx - 1);
     }
 
+    /**
+     * 回退到上一个标记
+     */
     protected void previousToken() {
         tokenIdx--;
     }
 
+    /**
+     * 获取下一个标记
+     * 
+     * @return 下一个SQL标记对象
+     */
     protected SQLToken nextToken() {
         if (tokenIdx >= tokens.size()) {
-            tokenIdx++; // must be ever increment that the method
-            // previousToken() is working
+            tokenIdx++; // 必须递增，这样previousToken()方法才能正常工作
             return null;
         }
         return (SQLToken) tokens.get(tokenIdx++);
     }
 
+    /**
+     * 获取下一个标记并验证其有效性
+     * 
+     * @param validValues 有效值数组
+     * @return SQL标记对象
+     * @throws SQLException SQL异常
+     */
     protected SQLToken nextToken(int[] validValues) throws SQLException {
         SQLToken token = nextToken();
         if (token == null)
             throw createSyntaxError(token, validValues);
         if (validValues == MISSING_EXPRESSION) {
-            return token; // an expression can be contained in every token.
+            return token; // 表达式可以包含在任何标记中
         }
         if (validValues == MISSING_IDENTIFIER) {
-            // the follow token are not valid identifier
+            // 以下标记不是有效的标识符
             switch (token.value) {
                 case SQLTokenizer.PARENTHESIS_L:
                 case SQLTokenizer.PARENTHESIS_R:
@@ -423,16 +494,15 @@ public final class SQLParser {
     }
 
     /**
-     * A single SELECT of a UNION or only a simple single SELECT.
+     * 解析单个SELECT语句（UNION的一部分或简单的单个SELECT）
      *
-     * @return
-     * @throws SQLException
+     * @return CommandSelect对象
+     * @throws SQLException SQL异常
      */
     private CommandSelect singleSelect() throws SQLException {
         CommandSelect selCmd = new CommandSelect(con.log);
         SQLToken token;
-        // scan for prefix like DISTINCT, ALL and the TOP clause; sample: SELECT
-        // TOP 15 ...
+        // 扫描前缀，如DISTINCT、ALL和TOP子句；示例：SELECT TOP 15 ...
         Switch:
         while (true) {
             token = nextToken(MISSING_EXPRESSION);
@@ -465,7 +535,7 @@ public final class SQLParser {
 
             token = nextToken();
             if (token == null)
-                return selCmd; // SELECT without FROM
+                return selCmd; // 没有FROM的SELECT
 
             boolean as = false;
             if (token.value == SQLTokenizer.AS) {
@@ -478,7 +548,7 @@ public final class SQLParser {
                 column.setAlias(alias);
                 token = nextToken();
                 if (token == null)
-                    return selCmd; // SELECT without FROM
+                    return selCmd; // 没有FROM的SELECT
             }
 
             switch (token.value) {
@@ -504,6 +574,12 @@ public final class SQLParser {
         }
     }
 
+    /**
+     * 解析SELECT语句
+     * 
+     * @return CommandSelect对象
+     * @throws SQLException SQL异常
+     */
     final private CommandSelect select() throws SQLException {
         CommandSelect selCmd = singleSelect();
         SQLToken token = nextToken();
@@ -538,6 +614,12 @@ public final class SQLParser {
         return selCmd;
     }
 
+    /**
+     * 解析DELETE语句
+     * 
+     * @return CommandDelete对象
+     * @throws SQLException SQL异常
+     */
     private Command delete() throws SQLException {
         CommandDelete cmd = new CommandDelete(con.log);
         nextToken(MISSING_FROM);
@@ -551,6 +633,12 @@ public final class SQLParser {
         return cmd;
     }
 
+    /**
+     * 解析TRUNCATE语句
+     * 
+     * @return CommandDelete对象
+     * @throws SQLException SQL异常
+     */
     private Command truncate() throws SQLException {
         CommandDelete cmd = new CommandDelete(con.log);
         nextToken(MISSING_TABLE);
@@ -558,6 +646,12 @@ public final class SQLParser {
         return cmd;
     }
 
+    /**
+     * 解析INSERT语句
+     * 
+     * @return CommandInsert对象
+     * @throws SQLException SQL异常
+     */
     private Command insert() throws SQLException {
         SQLToken token = nextToken(MISSING_INTO);
         CommandInsert cmd = new CommandInsert(con.log, nextIdentifier());
@@ -604,9 +698,15 @@ public final class SQLParser {
             }
     }
 
+    /**
+     * 解析UPDATE语句
+     * 
+     * @return CommandUpdate对象
+     * @throws SQLException SQL异常
+     */
     private Command update() throws SQLException {
         CommandUpdate cmd = new CommandUpdate(con.log);
-        // read table name
+        // 读取表名
         DataSources tables = new DataSources();
         cmd.setTables(tables);
         cmd.setSource(rowSource(cmd, tables, 0));
@@ -636,6 +736,12 @@ public final class SQLParser {
         return cmd;
     }
 
+    /**
+     * 解析CREATE语句
+     * 
+     * @return Command对象
+     * @throws SQLException SQL异常
+     */
     private Command create() throws SQLException {
         while (true) {
             SQLToken token = nextToken(COMMANDS_CREATE);
@@ -664,6 +770,12 @@ public final class SQLParser {
         }
     }
 
+    /**
+     * 解析CREATE DATABASE语句
+     * 
+     * @return CommandCreateDatabase对象
+     * @throws SQLException SQL异常
+     */
     private CommandCreateDatabase createDatabase() throws SQLException {
         SQLToken token = nextToken();
         if (token == null)
@@ -671,6 +783,12 @@ public final class SQLParser {
         return new CommandCreateDatabase(con.log, token.getName(sql));
     }
 
+    /**
+     * 解析CREATE TABLE语句
+     * 
+     * @return CommandTable对象
+     * @throws SQLException SQL异常
+     */
     private CommandTable createTable() throws SQLException {
         String catalog;
         String tableName = catalog = nextIdentifier();
@@ -687,7 +805,7 @@ public final class SQLParser {
 
             String constraintName;
             if (token.value == SQLTokenizer.CONSTRAINT) {
-                // reading a CONSTRAINT with name
+                // 读取带名称的约束
                 constraintName = nextIdentifier();
                 token = nextToken(MISSING_KEYTYPE);
             } else {
@@ -722,7 +840,7 @@ public final class SQLParser {
                             continue nextCol;
                     }
             }
-            // the token is a column name
+            // 标记是列名
             token = addColumn(token, cmdCreate);
             if (token == null) {
                 throw createSyntaxError(token, MISSING_COMMA_PARENTHESIS);
@@ -739,11 +857,11 @@ public final class SQLParser {
     }
 
     /**
-     * Parse a Column and add it to the Command. If the column is unique or
-     * primary then an index is added.
+     * 解析列并将其添加到命令中。如果列是唯一或主键，则添加索引。
      *
-     * @param token the SQLToken with the column name
-     * @return the token of the delimiter
+     * @param token SQLToken包含列名
+     * @param cmdCreate CommandTable对象
+     * @return 分隔符标记
      */
     private SQLToken addColumn(SQLToken token, CommandTable cmdCreate)
             throws SQLException {
@@ -753,9 +871,7 @@ public final class SQLParser {
 
         token = nextToken();
         boolean nullableWasSet = false;
-        boolean defaultWasSet = col.isAutoIncrement(); // with data type COUNTER
-        // already this value is
-        // set
+        boolean defaultWasSet = col.isAutoIncrement(); // 使用数据类型COUNTER时已经设置了此值
         while (true) {
             if (token == null) {
                 cmdCreate.addColumn(col);
@@ -790,7 +906,7 @@ public final class SQLParser {
                 case SQLTokenizer.NULL:
                     if (nullableWasSet)
                         throw createSyntaxError(token, MISSING_COMMA_PARENTHESIS);
-                    // col.setNullable(true); is already default
+                    // col.setNullable(true); 已经是默认值
                     nullableWasSet = true;
                     break;
                 case SQLTokenizer.NOT:
@@ -814,14 +930,16 @@ public final class SQLParser {
     }
 
     /**
-     * Parse construct like:<br>
+     * 解析如下结构：<br>
      * <li>PRIMARY KEY (col1) <li>UNIQUE (col1, col2) <li>FOREIGN KEY REFERENCES
      * ref_table(col1)
      *
-     * @param cmd
-     * @param constraintType one of SQLTokenizer.PRIMARY, SQLTokenizer.UNIQUE or
-     *                       SQLTokenizer.FOREIGN.
-     * @return a new IndexDescription
+     * @param cmd 命令对象
+     * @param constraintType 约束类型，SQLTokenizer.PRIMARY、SQLTokenizer.UNIQUE或SQLTokenizer.FOREIGN之一
+     * @param tableName 表名
+     * @param contrainName 约束名称
+     * @param columnName 列名
+     * @return 新的IndexDescription对象
      */
     private IndexDescription index(Command cmd, int constraintType,
                                    String tableName, String contrainName, String columnName)
@@ -833,7 +951,7 @@ public final class SQLParser {
             switch (token.value) {
                 case SQLTokenizer.CLUSTERED:
                 case SQLTokenizer.NONCLUSTERED:
-                    // ignoring, this tokens form MS SQL Server are ignored
+                    // 忽略，这些来自MS SQL Server的标记被忽略
                     break;
                 default:
                     previousToken();
@@ -844,12 +962,11 @@ public final class SQLParser {
         Strings columns = new Strings();
         Expressions expressions = new Expressions();
         if (columnName != null) {
-            // Constraint for a single column together with the column
-            // definition
+            // 与列定义一起的单列约束
             columns.add(columnName);
             expressions.add(new ExpressionName(columnName));
         } else {
-            // Constraint as addition definition
+            // 作为附加定义的约束
             expressionDefList(cmd, expressions, columns);
         }
         return new IndexDescription(contrainName, tableName, constraintType,
@@ -857,11 +974,10 @@ public final class SQLParser {
     }
 
     /**
-     * Read a DataTpe description. This is used for CREATE TABLE and CONVERT
-     * function.
+     * 读取数据类型描述。这用于CREATE TABLE和CONVERT函数。
      *
-     * @param isEscape true then the data types start with "SQL_". This is used for
-     *                 the Escape Syntax.
+     * @param isEscape 如果为true，则数据类型以"SQL_"开头。这用于转义语法。
+     * @return Column对象
      */
     private Column datatype(boolean isEscape) throws SQLException {
         SQLToken token;
@@ -932,7 +1048,7 @@ public final class SQLParser {
         }
         Column col = new Column();
 
-        // two-part data type
+        // 两部分数据类型
         if (dataType == SQLTokenizer.LONG) {
             token = nextToken();
             if (token != null && token.value == SQLTokenizer.RAW) {
@@ -953,7 +1069,7 @@ public final class SQLParser {
             case SQLTokenizer.NVARCHAR:
             case SQLTokenizer.BINARY:
             case SQLTokenizer.VARBINARY: {
-                // detect the maximum column size
+                // 检测最大列大小
                 token = nextToken();
                 int displaySize;
                 if (token == null || token.value != SQLTokenizer.PARENTHESIS_L) {
@@ -983,7 +1099,7 @@ public final class SQLParser {
             case SQLTokenizer.DECIMAL:
                 token = nextToken();
                 if (token != null && token.value == SQLTokenizer.PARENTHESIS_L) {
-                    // read the precision of the data type
+                    // 读取数据类型的精度
                     token = nextToken(MISSING_EXPRESSION);
                     int value;
                     try {
@@ -994,7 +1110,7 @@ public final class SQLParser {
                     col.setPrecision(value);
                     token = nextToken(MISSING_COMMA_PARENTHESIS);
                     if (token.value == SQLTokenizer.COMMA) {
-                        // read the scale of the data type
+                        // 读取数据类型的标度
                         token = nextToken(MISSING_EXPRESSION);
                         try {
                             value = Integer.parseInt(token.getName(sql));
@@ -1005,8 +1121,7 @@ public final class SQLParser {
                         nextToken(MISSING_PARENTHESIS_R);
                     }
                 } else {
-                    col.setPrecision(18); // default Precision for decimal and
-                    // numeric
+                    col.setPrecision(18); // decimal和numeric的默认精度
                     previousToken();
                 }
                 break;
@@ -1015,6 +1130,12 @@ public final class SQLParser {
         return col;
     }
 
+    /**
+     * 解析CREATE VIEW语句
+     * 
+     * @return CommandCreateView对象
+     * @throws SQLException SQL异常
+     */
     private CommandCreateView createView() throws SQLException {
         String viewName = nextIdentifier();
 
@@ -1023,10 +1144,17 @@ public final class SQLParser {
         CommandCreateView cmd = new CommandCreateView(con.log, viewName);
 
         cmd.sql = new String(sql, token.offset, sql.length - token.offset);
-        select(); // Parse to check for valid
+        select(); // 解析以检查有效性
         return cmd;
     }
 
+    /**
+     * 解析CREATE INDEX语句
+     * 
+     * @param unique 是否唯一索引
+     * @return CommandTable对象
+     * @throws SQLException SQL异常
+     */
     private CommandTable createIndex(boolean unique) throws SQLException {
         String indexName = nextIdentifier();
         nextToken(MISSING_ON);
@@ -1048,12 +1176,24 @@ public final class SQLParser {
         throw SmallSQLException.create(Language.UNSUPPORTED_OPERATION, param);
     }
 
+    /**
+     * 解析CREATE PROCEDURE语句
+     * 
+     * @return CommandCreateDatabase对象
+     * @throws SQLException SQL异常
+     */
     private CommandCreateDatabase createProcedure() throws SQLException {
         // TODO Create Procedure
         Object[] param = {"Create Procedure"};
         throw SmallSQLException.create(Language.UNSUPPORTED_OPERATION, param);
     }
 
+    /**
+     * 解析DROP语句
+     * 
+     * @return Command对象
+     * @throws SQLException SQL异常
+     */
     private Command drop() throws SQLException {
         SQLToken tokenType = nextToken(COMMANDS_DROP);
 
@@ -1075,6 +1215,12 @@ public final class SQLParser {
         }
     }
 
+    /**
+     * 解析ALTER语句
+     * 
+     * @return Command对象
+     * @throws SQLException SQL异常
+     */
     private Command alter() throws SQLException {
         SQLToken tokenType = nextToken(COMMANDS_ALTER);
         String catalog;
@@ -1102,6 +1248,14 @@ public final class SQLParser {
         }
     }
 
+    /**
+     * 解析ALTER TABLE语句
+     * 
+     * @param catalog 数据库目录名
+     * @param name 表名
+     * @return Command对象
+     * @throws SQLException SQL异常
+     */
     Command alterTable(String catalog, String name) throws SQLException {
         SQLToken tokenType = nextToken(MISSING_ADD_ALTER_DROP);
         CommandTable cmd = new CommandTable(con.log, catalog, name,
@@ -1122,6 +1276,12 @@ public final class SQLParser {
         }
     }
 
+    /**
+     * 解析SET语句
+     * 
+     * @return Command对象
+     * @throws SQLException SQL异常
+     */
     private CommandSet set() throws SQLException {
         SQLToken token = nextToken(COMMANDS_SET);
         switch (token.value) {
@@ -1132,6 +1292,12 @@ public final class SQLParser {
         }
     }
 
+    /**
+     * 解析SET TRANSACTION语句
+     * 
+     * @return CommandSet对象
+     * @throws SQLException SQL异常
+     */
     private CommandSet setTransaction() throws SQLException {
         SQLToken token = nextToken(MISSING_ISOLATION);
         token = nextToken(MISSING_LEVEL);
@@ -1164,6 +1330,12 @@ public final class SQLParser {
 
     }
 
+    /**
+     * 解析EXECUTE语句
+     * 
+     * @return Command对象
+     * @throws SQLException SQL异常
+     */
     private Command execute() throws SQLException {
         // TODO Execute
         throw SmallSQLException.create(Language.UNSUPPORTED_OPERATION,
@@ -1171,10 +1343,10 @@ public final class SQLParser {
     }
 
     /**
-     * Read a Expression list in parenthesis like of VALUES() or functions. The
-     * left parenthesis is already consumed.
+     * 读取括号中的表达式列表，如VALUES()或函数。左括号已被消耗。
      *
-     * @param cmd is needed to add parameters "?" with addParameter()
+     * @param cmd 需要添加参数"?"的命令对象
+     * @return 表达式列表
      * @see #expressionDefList
      */
     private Expressions expressionParenthesisList(Command cmd)
@@ -1183,7 +1355,7 @@ public final class SQLParser {
         {
             SQLToken token = nextToken();
             if (token != null && token.value == SQLTokenizer.PARENTHESIS_R) {
-                // empty list like functions without parameters
+                // 空列表，如没有参数的函数
                 return list;
             }
             previousToken();
@@ -1203,8 +1375,12 @@ public final class SQLParser {
     }
 
     /**
-     * Read a list of expressions. The list is limit from specific SQL keywords
-     * like SELECT, GROUP BY, ORDER BY
+     * 读取表达式列表。列表由特定SQL关键字（如SELECT、GROUP BY、ORDER BY）限定
+     * 
+     * @param cmd 命令对象
+     * @param listType 列表类型
+     * @return 表达式列表
+     * @throws SQLException SQL异常
      */
     private Expressions expressionTokenList(Command cmd, int listType)
             throws SQLException {
@@ -1242,6 +1418,14 @@ public final class SQLParser {
         }
     }
 
+    /**
+     * 读取表达式定义列表
+     * 
+     * @param cmd 命令对象
+     * @param expressions 表达式列表
+     * @param columns 列名列表
+     * @throws SQLException SQL异常
+     */
     private void expressionDefList(Command cmd, Expressions expressions,
                                    Strings columns) throws SQLException {
         SQLToken token = nextToken();
@@ -1273,11 +1457,11 @@ public final class SQLParser {
     }
 
     /**
-     * Read a complex expression that can be build from multiple atomic
-     * expressions.
+     * 读取可由多个原子表达式构建的复杂表达式。
      *
-     * @param cmd                    is needed to add parameters "?" with addParameter()
-     * @param previousOperationLevel the level of the left operation.
+     * @param cmd 命令对象，用于添加参数"?"
+     * @param previousOperationLevel 左操作的级别
+     * @return 表达式对象
      */
     private Expression expression(Command cmd, int previousOperationLevel)
             throws SQLException {
@@ -1387,10 +1571,11 @@ public final class SQLParser {
     }
 
     /**
-     * This method parse a single expression like 12, 'qwert', 0x3F or a column
-     * name.
+     * 此方法解析单个表达式，如12、'qwert'、0x3F或列名。
      *
-     * @param cmd is needed to add parameters "?" with addParameter()
+     * @param cmd 需要添加参数"?"的命令对象
+     * @param token SQL标记
+     * @return 表达式对象
      */
     private Expression expressionSingle(Command cmd, SQLToken token)
             throws SQLException {
@@ -1422,26 +1607,26 @@ public final class SQLParser {
                     SQLToken para = nextToken(MISSING_EXPRESSION);
                     Expression expr;
                     switch (token.value) {
-                        case SQLTokenizer.D: // date escape sequence
+                        case SQLTokenizer.D: // 日期转义序列
                             expr = new ExpressionValue(DateTime.valueOf(
                                     para.getName(sql), SQLTokenizer.DATE),
                                     SQLTokenizer.DATE);
                             break;
-                        case SQLTokenizer.T: // time escape sequence
+                        case SQLTokenizer.T: // 时间转义序列
                             expr = new ExpressionValue(DateTime.valueOf(
                                     para.getName(sql), SQLTokenizer.TIME),
                                     SQLTokenizer.TIME);
                             break;
-                        case SQLTokenizer.TS: // timestamp escape sequence
+                        case SQLTokenizer.TS: // 时间戳转义序列
                             expr = new ExpressionValue(DateTime.valueOf(
                                     para.getName(sql), SQLTokenizer.TIMESTAMP),
                                     SQLTokenizer.TIMESTAMP);
                             break;
-                        case SQLTokenizer.FN: // function escape sequence
+                        case SQLTokenizer.FN: // 函数转义序列
                             nextToken(MISSING_PARENTHESIS_L);
                             expr = function(cmd, para, true);
                             break;
-                        case SQLTokenizer.CALL: // call escape sequence
+                        case SQLTokenizer.CALL: // 调用转义序列
                             throw new java.lang.UnsupportedOperationException(
                                     "call escape sequence");
                         default:
@@ -1458,7 +1643,7 @@ public final class SQLParser {
                     return caseExpr(cmd);
                 case SQLTokenizer.MINUS:
                 case SQLTokenizer.PLUS:
-                    // sign detection
+                    // 符号检测
                     do {
                         if (token.value == SQLTokenizer.MINUS)
                             isMinus = !isMinus;
@@ -1477,7 +1662,7 @@ public final class SQLParser {
                                     false), ExpressionArithmetic.NEGATIVE);
                         return function(cmd, token, false);
                     } else {
-                        // constant expression or identifier
+                        // 常量表达式或标识符
                         char chr1 = sql[token.offset];
                         if (chr1 == '$') {
                             previousToken();
@@ -1491,10 +1676,10 @@ public final class SQLParser {
                         String tok = new String(sql, token.offset, token.length);
                         if ((chr1 >= '0' && '9' >= chr1) || chr1 == '.') {
                             previousToken();
-                            // first character is a digit
+                            // 第一个字符是数字
                             if (token.length > 1
                                     && (sql[token.offset + 1] | 0x20) == 'x') {
-                                // binary data as hex
+                                // 二进制数据作为十六进制
                                 if (isMinus) {
                                     throw createSyntaxError(token,
                                             Language.STXADD_OPER_MINUS);
@@ -1520,7 +1705,7 @@ public final class SQLParser {
                                 }
                             }
                         } else {
-                            // identifier
+                            // 标识符
                             checkValidIdentifier(tok, token);
                             ExpressionName expr = new ExpressionName(tok);
                             if (token2 != null
@@ -1540,13 +1725,20 @@ public final class SQLParser {
         return null;
     }
 
+    /**
+     * 解析CASE表达式
+     * 
+     * @param cmd 命令对象
+     * @return ExpressionFunctionCase对象
+     * @throws SQLException SQL异常
+     */
     ExpressionFunctionCase caseExpr(final Command cmd) throws SQLException {
         ExpressionFunctionCase expr = new ExpressionFunctionCase();
         SQLToken token = nextToken(MISSING_EXPRESSION);
 
         Expression input = null;
         if (token.value != SQLTokenizer.WHEN) {
-            // simple CASE Syntax
+            // 简单CASE语法
             previousToken();
             input = expression(cmd, 0);
             token = nextToken(MISSING_WHEN_ELSE_END);
@@ -1557,7 +1749,7 @@ public final class SQLParser {
                 case SQLTokenizer.WHEN:
                     Expression condition = expression(cmd, 0);
                     if (input != null) {
-                        // simple CASE Syntax
+                        // 简单CASE语法
                         condition = new ExpressionArithmetic(input, condition,
                                 ExpressionArithmetic.EQUALS);
                     }
@@ -1579,11 +1771,12 @@ public final class SQLParser {
     }
 
     /**
-     * Parse any functions. The left parenthesis is already consumed from token
-     * list.
+     * 解析任何函数。左括号已从标记列表中消耗。
      *
-     * @param token    the SQLToken of the function
-     * @param isEscape If the function is a FN ESCAPE sequence
+     * @param cmd 命令对象
+     * @param token 函数的SQLToken
+     * @param isEscape 如果函数是FN ESCAPE序列
+     * @return 表达式对象
      */
     private Expression function(Command cmd, SQLToken token, boolean isEscape)
             throws SQLException {
@@ -1639,7 +1832,7 @@ public final class SQLParser {
         Expression[] params = paramList.toArray();
         boolean invalidParamCount;
         switch (token.value) {
-            // numeric functions:
+            // 数值函数:
             case SQLTokenizer.ABS:
                 invalidParamCount = (paramCount != 1);
                 expr = new ExpressionFunctionAbs();
@@ -1737,7 +1930,7 @@ public final class SQLParser {
                 expr = new ExpressionFunctionTruncate();
                 break;
 
-            // string functions:
+            // 字符串函数:
             case SQLTokenizer.ASCII:
                 invalidParamCount = (paramCount != 1);
                 expr = new ExpressionFunctionAscii();
@@ -1830,7 +2023,7 @@ public final class SQLParser {
                 expr = new ExpressionFunctionUCase();
                 break;
 
-            // date time functions
+            // 日期时间函数
             case SQLTokenizer.CURDATE:
             case SQLTokenizer.CURRENTDATE:
                 invalidParamCount = (paramCount != 0);
@@ -1876,7 +2069,7 @@ public final class SQLParser {
                 expr = new ExpressionFunctionYear();
                 break;
 
-            // system functions:
+            // 系统函数:
             case SQLTokenizer.IIF:
                 invalidParamCount = (paramCount != 3);
                 expr = new ExpressionFunctionIIF();
@@ -1911,15 +2104,15 @@ public final class SQLParser {
                 }
                 break;
 
-            // now come the aggregate functions
+            // 聚合函数
             case SQLTokenizer.COUNT:
                 invalidParamCount = (paramCount != 1);
                 if (params[0].getType() == Expression.NAME) {
-                    // detect special case COUNT(*)
+                    // 检测特殊情况COUNT(*)
                     ExpressionName param = (ExpressionName) params[0];
                     if ("*".equals(param.getName())
                             && param.getTableAlias() == null) {
-                        // set any not NULL value as parameter
+                        // 设置任何非NULL值作为参数
                         params[0] = new ExpressionValue("*", SQLTokenizer.VARCHAR);
                     }
                 }
@@ -1969,8 +2162,12 @@ public final class SQLParser {
     }
 
     /**
-     * read a table or view name in a FROM clause. If the keyword AS exists then
-     * read it also the alias
+     * 读取FROM子句中的表或视图名称。如果存在关键字AS，则也读取别名
+     * 
+     * @param cmd 命令对象
+     * @param tables 数据源列表
+     * @return RowSource对象
+     * @throws SQLException SQL异常
      */
     private RowSource tableSource(Command cmd, DataSources tables)
             throws SQLException {
@@ -1982,7 +2179,7 @@ public final class SQLParser {
                 token = nextToken(MISSING_OJ);
                 return rowSource(cmd, tables, SQLTokenizer.ESCAPE_R);
             case SQLTokenizer.SELECT:
-                // inner select
+                // 内部select
                 ViewResult viewResult = new ViewResult(con, select());
                 tables.add(viewResult);
                 return viewResult;
@@ -1990,7 +2187,7 @@ public final class SQLParser {
         String catalog = null;
         String name = getIdentifier(token);
         token = nextToken();
-        // check if the table name include a database name
+        // 检查表名是否包含数据库名
         if (token != null && token.value == SQLTokenizer.POINT) {
             catalog = name;
             name = nextIdentifier();
@@ -2003,7 +2200,7 @@ public final class SQLParser {
         tables.add(table);
 
         if (token != null && token.value == SQLTokenizer.AS) {
-            // skip AS keyword, if exists
+            // 跳过AS关键字（如果存在）
             token = nextToken(MISSING_EXPRESSION);
             table.setAlias(token.getName(sql));
         } else {
@@ -2013,7 +2210,14 @@ public final class SQLParser {
     }
 
     /**
-     * read a join in a from clause.
+     * 读取from子句中的连接
+     * 
+     * @param cmd 命令对象
+     * @param tables 数据源列表
+     * @param left 左侧RowSource
+     * @param type 连接类型
+     * @return Join对象
+     * @throws SQLException SQL异常
      */
     private Join join(Command cmd, DataSources tables, RowSource left, int type)
             throws SQLException {
@@ -2043,8 +2247,13 @@ public final class SQLParser {
     }
 
     /**
-     * returns a row source. A row source is a Table, Join, View or a row
-     * function.
+     * 返回行源。行源可以是表、连接、视图或行函数。
+     * 
+     * @param cmd 命令对象
+     * @param tables 数据源列表
+     * @param parenthesis 括号类型
+     * @return RowSource对象
+     * @throws SQLException SQL异常
      */
     private RowSource rowSource(Command cmd, DataSources tables, int parenthesis)
             throws SQLException {
@@ -2115,6 +2324,12 @@ public final class SQLParser {
         }
     }
 
+    /**
+     * 解析FROM子句
+     * 
+     * @param cmd CommandSelect对象
+     * @throws SQLException SQL异常
+     */
     private void from(CommandSelect cmd) throws SQLException {
         DataSources tables = new DataSources();
         cmd.setTables(tables);
@@ -2139,11 +2354,23 @@ public final class SQLParser {
         }
     }
 
+    /**
+     * 解析ORDER BY子句
+     * 
+     * @param cmd CommandSelect对象
+     * @throws SQLException SQL异常
+     */
     private void order(CommandSelect cmd) throws SQLException {
         nextToken(MISSING_BY);
         cmd.setOrder(expressionTokenList(cmd, SQLTokenizer.ORDER));
     }
 
+    /**
+     * 解析LIMIT子句
+     * 
+     * @param selCmd CommandSelect对象
+     * @throws SQLException SQL异常
+     */
     private void limit(CommandSelect selCmd) throws SQLException {
         SQLToken token = nextToken(MISSING_EXPRESSION);
         try {
@@ -2155,19 +2382,38 @@ public final class SQLParser {
         }
     }
 
+    /**
+     * 解析GROUP BY子句
+     * 
+     * @param cmd CommandSelect对象
+     * @throws SQLException SQL异常
+     */
     private void group(CommandSelect cmd) throws SQLException {
         nextToken(MISSING_BY);
         cmd.setGroup(expressionTokenList(cmd, SQLTokenizer.GROUP));
     }
 
+    /**
+     * 解析WHERE子句
+     * 
+     * @param cmd CommandSelect对象
+     * @throws SQLException SQL异常
+     */
     private void where(CommandSelect cmd) throws SQLException {
         cmd.setWhere(expression(cmd, 0));
     }
 
+    /**
+     * 解析HAVING子句
+     * 
+     * @param cmd CommandSelect对象
+     * @throws SQLException SQL异常
+     */
     private void having(CommandSelect cmd) throws SQLException {
         cmd.setHaving(expression(cmd, 0));
     }
 
+    // 各种命令和标记的常量数组定义
     private static final int[] COMMANDS = {SQLTokenizer.SELECT,
             SQLTokenizer.DELETE, SQLTokenizer.INSERT, SQLTokenizer.UPDATE,
             SQLTokenizer.CREATE, SQLTokenizer.DROP, SQLTokenizer.ALTER,
