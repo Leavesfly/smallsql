@@ -37,6 +37,14 @@ import io.leavesfly.smallsql.rdb.sql.datatype.MutableNumeric;
 import io.leavesfly.smallsql.rdb.sql.parser.SQLTokenizer;
 import io.leavesfly.smallsql.rdb.sql.expression.function.ExpressionFunctionReturnP1;
 
+/**
+ * ABS函数实现类，用于计算数值的绝对值
+ * 
+ * 使用了策略模式:
+ * - 继承ExpressionFunctionReturnP1类，提供特定于ABS函数的实现
+ * - 通过getFunction()方法标识具体函数类型
+ * - 根据不同数据类型提供相应的绝对值计算方法
+ */
 public class ExpressionFunctionAbs extends ExpressionFunctionReturnP1 {
 
 	public int getFunction() {

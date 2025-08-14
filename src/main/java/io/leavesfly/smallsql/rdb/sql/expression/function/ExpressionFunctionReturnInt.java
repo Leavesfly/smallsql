@@ -40,6 +40,10 @@ import io.leavesfly.smallsql.util.Utils;
 /**
  * Supper class for functions that return the data type INT
  * 
+ * 使用了策略模式和模板方法模式:
+ * - 策略模式：为不同返回类型提供不同的实现策略
+ * - 模板方法模式：提供通用的方法实现，如getBoolean()、getLong()等基于getInt()的实现
+ * 
  * @author Volker Berlin
  */
 public abstract class ExpressionFunctionReturnInt extends ExpressionFunction {

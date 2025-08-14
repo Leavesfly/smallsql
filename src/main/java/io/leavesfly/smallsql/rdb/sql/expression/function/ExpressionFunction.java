@@ -52,6 +52,10 @@ import io.leavesfly.smallsql.rdb.sql.expression.ExpressionValue;
  * <p>
  * 4.) Add a case to the switch in SQLParser.function().
  * <p>
+ * 
+ * 使用了模板方法模式和工厂模式:
+ * - 模板方法模式：定义了函数的通用结构和默认实现
+ * - 工厂模式：通过FunctionFactory创建具体的函数对象
  */
 
 public abstract class ExpressionFunction extends Expression {
@@ -65,7 +69,7 @@ public abstract class ExpressionFunction extends Expression {
 		super(FUNCTION);
 	}
 
-	// setzt die Funktionsnummer z.B. bei abs(5) --> SQLTokenizer.ABS
+	// 设置函数编号，例如 abs(5) --> SQLTokenizer.ABS
 	public abstract int getFunction();
 
 	public byte[] getBytes() throws Exception {

@@ -40,6 +40,12 @@ import io.leavesfly.smallsql.rdb.sql.parser.SQLTokenizer;
 import io.leavesfly.smallsql.util.Utils;
 
 /**
+ * REPLACE函数实现类，用于替换字符串中的子串
+ * 
+ * 使用了策略模式:
+ * - 继承ExpressionFunctionReturnP1StringAndBinary类，提供特定于REPLACE函数的实现
+ * - 通过getFunction()方法标识具体函数类型
+ * 
  * @author Volker Berlin
  */
 public class ExpressionFunctionReplace extends ExpressionFunctionReturnP1StringAndBinary {

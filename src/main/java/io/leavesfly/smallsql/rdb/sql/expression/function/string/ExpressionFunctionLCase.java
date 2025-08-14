@@ -37,6 +37,12 @@ import io.leavesfly.smallsql.rdb.sql.parser.SQLTokenizer;
 import io.leavesfly.smallsql.rdb.sql.expression.function.ExpressionFunctionReturnP1StringAndBinary;
 
 /**
+ * LCASE函数实现类，用于将字符串转换为小写
+ * 
+ * 使用了策略模式:
+ * - 继承ExpressionFunctionReturnP1StringAndBinary类，提供特定于LCASE函数的实现
+ * - 通过getFunction()方法标识具体函数类型
+ * 
  * @author Volker Berlin
  */
 public class ExpressionFunctionLCase extends ExpressionFunctionReturnP1StringAndBinary {
