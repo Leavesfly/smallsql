@@ -131,9 +131,9 @@ import io.leavesfly.smallsql.util.Utils;
 public final class SQLParser {
 
     SsConnection con;
-    private char[] sql;
-    private List<SQLToken> tokens;
-    private int tokenIdx;
+    protected char[] sql;
+    protected List<SQLToken> tokens;
+    protected int tokenIdx;
 
     public Command parse(SsConnection con, String sqlString)
             throws SQLException {
@@ -198,7 +198,7 @@ public final class SQLParser {
      * @param token token object; if not null, generates a SYNTAX_BASE_OFS,
      *              otherwise a SYNTAX_BASE_END.
      */
-    private SQLException createSyntaxError(SQLToken token, String addMessageCode) {
+    protected SQLException createSyntaxError(SQLToken token, String addMessageCode) {
         String message = getErrorString(token, addMessageCode, null);
         return SmallSQLException.create(Language.CUSTOM_MESSAGE, message);
     }
@@ -211,7 +211,7 @@ public final class SQLParser {
      * @param addMessageCode additional message[Code] to append.
      * @param param0         parameter.
      */
-    private SQLException createSyntaxError(SQLToken token,
+    protected SQLException createSyntaxError(SQLToken token,
                                            String addMessageCode, Object param0) {
         String message = getErrorString(token, addMessageCode, param0);
         return SmallSQLException.create(Language.CUSTOM_MESSAGE, message);
@@ -224,7 +224,7 @@ public final class SQLParser {
      * @param validValues valid values.
      * @return Exception.
      */
-    private SQLException createSyntaxError(SQLToken token, int[] validValues) {
+    protected SQLException createSyntaxError(SQLToken token, int[] validValues) {
         String msgStr = SmallSQLException.translateMsg(
                 Language.STXADD_KEYS_REQUIRED, new Object[]{});
 
@@ -294,7 +294,7 @@ public final class SQLParser {
         return buffer.toString();
     }
 
-    private void checkValidIdentifier(String name, SQLToken token)
+    protected void checkValidIdentifier(String name, SQLToken token)
             throws SQLException {
         if (token.value == SQLTokenizer.ASTERISK)
             return;
@@ -318,7 +318,7 @@ public final class SQLParser {
      * @return the string with the name
      * @throws SQLException if the identifier is invalid
      */
-    private String getIdentifier(SQLToken token) throws SQLException {
+    protected String getIdentifier(SQLToken token) throws SQLException {
         String name = token.getName(sql);
         checkValidIdentifier(name, token);
         return name;
@@ -330,7 +330,7 @@ public final class SQLParser {
      * @return the string with the name
      * @throws SQLException if the identifier is invalid
      */
-    private String nextIdentifier() throws SQLException {
+    protected String nextIdentifier() throws SQLException {
         return getIdentifier(nextToken(MISSING_IDENTIFIER));
     }
 
@@ -342,7 +342,7 @@ public final class SQLParser {
      * @return the second part if exist else returns the first part
      * @throws SQLException
      */
-    private String nextIdentiferPart(String name) throws SQLException {
+    protected String nextIdentiferPart(String name) throws SQLException {
         SQLToken token = nextToken();
         // check if the object name include a database name
         if (token != null && token.value == SQLTokenizer.POINT) {
@@ -353,7 +353,7 @@ public final class SQLParser {
         return name;
     }
 
-    final private boolean isKeyword(SQLToken token) {
+    final protected boolean isKeyword(SQLToken token) {
         if (token == null)
             return false;
         switch (token.value) {
@@ -378,18 +378,18 @@ public final class SQLParser {
     /**
      * Return the last token that the method nextToken has return
      */
-    private SQLToken lastToken() {
+    protected SQLToken lastToken() {
         if (tokenIdx > tokens.size()) {
             return null;
         }
         return (SQLToken) tokens.get(tokenIdx - 1);
     }
 
-    private void previousToken() {
+    protected void previousToken() {
         tokenIdx--;
     }
 
-    private SQLToken nextToken() {
+    protected SQLToken nextToken() {
         if (tokenIdx >= tokens.size()) {
             tokenIdx++; // must be ever increment that the method
             // previousToken() is working
@@ -398,7 +398,7 @@ public final class SQLParser {
         return (SQLToken) tokens.get(tokenIdx++);
     }
 
-    private SQLToken nextToken(int[] validValues) throws SQLException {
+    protected SQLToken nextToken(int[] validValues) throws SQLException {
         SQLToken token = nextToken();
         if (token == null)
             throw createSyntaxError(token, validValues);
